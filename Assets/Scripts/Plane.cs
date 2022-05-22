@@ -15,7 +15,7 @@ namespace Terrain
         MeshFilter meshFilter;
         void Start()
         {
-            creepingPlane = new CreepingPlane(0, 0, 1337, 20);
+            creepingPlane = new CreepingPlane(0, 0, 734, 20);
             meshRenderer = gameObject.AddComponent<MeshRenderer>();
             meshFilter = gameObject.AddComponent<MeshFilter>();
             meshRenderer.material = material;

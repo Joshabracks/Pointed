@@ -28,7 +28,7 @@ namespace Terrain
             triangles = new List<int>();
             offset = new Vector2(xOffset * size, zOffset * size);
             // root = new node(offset, 0);
-            
+
             vertices.Add(new Vector3(offset.x, 0, offset.y));
             // head = root;
             // previous = root;
@@ -72,10 +72,11 @@ namespace Terrain
         private float getAngle(Vector2 a, Vector2 b)
         {
             float angle = Mathf.Atan2(b.y - a.y, b.x - a.x);
-            return angle + (Mathf.PI * 10);
+            return angle;
         }
 
-        private Vector2 vec3to2(Vector3 a) {
+        private Vector2 vec3to2(Vector3 a)
+        {
             return new Vector2(a.x, a.z);
         }
 
@@ -147,13 +148,14 @@ namespace Terrain
             }
             else
             {
-                while (rendered.Contains(connections[n][next[n]])) {
+                while (rendered.Contains(connections[n][next[n]]))
+                {
                     next[n]++;
                 }
                 Debug.Log("<color=white>TWO</color>");
                 head = connections[n][next[n]];
                 previous = n;
-                next[previous] ++;
+                next[previous]++;
             }
             Debug.Log($"<color=yellow>UPDATE HEAD</color>P: {previous} H: {head}");
             // if (head.rendered) {
@@ -163,112 +165,110 @@ namespace Terrain
 
         private (int[] nodes, float[] angles) getRange(int n)
         {
-            // Debug.Log("<color=pink>GET RANGE</color>: " + n.index);
             if (connections[n].Count == 0)
             {
                 return (new int[1] { n }, new float[2] { 0, (2 * Mathf.PI) });
             }
 
-            int threshhold = 1;
-            List<int> startAndFinish = new List<int>();
-            while (startAndFinish.Count < 2)
-            {
 
-                foreach (int connection in connections[n])
+            // float previousAngle = getAngle(vec3to2(vertices[n]), vec3to2(vertices[previous])) + Mathf.PI * 2;
+            // if (previousAngle < 0) previousAngle += Mathf.PI * 2;
+            List<float> connectedAngles = new List<float>();
+            List<int> connectedIndices = new List<int>();
+            foreach (int index in connections[n])
+            {
+                if (index == previous) continue;
+                if (rendered.Contains(index)) continue;
+                connectedIndices.Add(index);
+                float a = getAngle(vec3to2(vertices[n]), vec3to2(vertices[index])) + Mathf.PI * 2;
+                // if (a < 0) a += Mathf.PI * 2;
+                connectedAngles.Add(a);
+            }
+
+            int[] nodes = new int[2] { connectedIndices[0], connectedIndices[connectedIndices.Count - 1] };
+            float[] angles = new float[2] { connectedAngles[0], connectedAngles[connectedIndices.Count - 1] };
+
+            for (int i = 0; i < connectedIndices.Count; i++)
+            {
+                if (connectedAngles[i] < angles[0])
                 {
-                    // Debug.Log(connection.connections.Count);
-                    if (connections[connection].Count == threshhold)
-                    {
-                        startAndFinish.Add(connection);
-                    }
+                    angles[0] = connectedAngles[i];
+                    nodes[0] = connectedIndices[i];
                 }
-                threshhold ++;
+                if (connectedAngles[i] > angles[1])
+                {
+                    angles[1] = connectedAngles[i];
+                    nodes[1] = connectedIndices[i];
+                }
             }
 
-            startAndFinish.Sort(delegate (int x, int y)
-            {
-                return x < y ? 1 : -1;
-            });
-            // Debug.Log($"<color=cyan>{startAndFinish[0].location} : {startAndFinish[1].location} : {n.location}</color>");
+            Vector2 midpoint = (vec3to2(vertices[nodes[0]]) + vec3to2(vertices[nodes[1]]) + vec3to2(vertices[previous])) / 3;
+            float aa = getAngle(midpoint, vec3to2(vertices[nodes[0]]));
+            float ab = getAngle(midpoint, vec3to2(vertices[nodes[1]]));
+            float ac = getAngle(midpoint, vec3to2(vertices[previous]));
 
-            float a = getAngle(vec3to2(vertices[n]), vec3to2(vertices[startAndFinish[0]]));
-            float b = getAngle(vec3to2(vertices[n]), vec3to2(vertices[startAndFinish[1]]));
-            if (b < a)
+            if (aa > ab && aa > ac)
             {
-                b += Mathf.PI * 2;
+                Debug.Log("<color=cyan>A</color>");
+                if (ab < ac) return (new int[2]{nodes[1], nodes[0]}, new float[2]{angles[1], angles[0]});
+                else return (new int[2]{nodes[0], nodes[1]}, new float[2]{angles[0], angles[1]});
+            }
+            else if (ab > aa && ab > ac)
+            {
+                Debug.Log("<color=cyan>B</color>");
+                if (aa < ac) return (new int[2]{nodes[1], nodes[0]}, new float[2]{angles[1], angles[0]});
+                else return (new int[2]{nodes[0], nodes[1]}, new float[2]{angles[0], angles[1]});
+            }
+            else
+            {
+                Debug.Log("<color=cyan>C</color>");
+                if (ab < aa) return (new int[2]{nodes[1], nodes[0]}, new float[2]{angles[1], angles[0]});
+                else return (new int[2]{nodes[0], nodes[1]}, new float[2]{angles[0], angles[1]});
             }
 
-            // if (a < 0) a = a + (Mathf.PI * 2);
-            // if (b < 0) b = b + (Mathf.PI * 2);
 
-            // if () {
-            return (startAndFinish.ToArray(), new float[2] { a, b });
-            // }
-            // return (new node[2]{startAndFinish[1], startAndFinish[0]}, new float[2]{b, a});
-            // Debug.Log($"<color=cyan>{a}:{b}</color>");
-            // if (a > b)
+            // Debug.Log("<color=pink>GET RANGE</color>: " + n.index);
+            // if (connections[n].Count == 0)
             // {
-            //     if (a - b > Mathf.PI)
+            //     return (new int[1] { n }, new float[2] { 0, (2 * Mathf.PI) });
+            // }
+
+            // int threshhold = 1;
+            // List<int> startAndFinish = new List<int>();
+            // while (startAndFinish.Count < 2)
+            // {
+
+            //     foreach (int connection in connections[n])
             //     {
-            //         Debug.Log("<color=cyan>ONE</color>");
-            //         return (startAndFinish.ToArray(), new float[2] { a - Mathf.PI * 2, b });
+            //         // Debug.Log(connection.connections.Count);
+            //         if (connections[connection].Count == threshhold)
+            //         {
+            //             startAndFinish.Add(connection);
+            //         }
             //     }
-            //     Debug.Log("<color=cyan>TWO</color>");
-            //     return (startAndFinish.ToArray(), new float[2] { a, b });
+            //     threshhold++;
             // }
-            // if (b - a > Mathf.PI)
+
+            // startAndFinish.Sort(delegate (int x, int y)
             // {
-            //     Debug.Log("<color=cyan>THREE</color>");
-            //     return (new node[2] { startAndFinish[1], startAndFinish[0] }, new float[2] { b - Mathf.PI * 2, a });
-            // }
-            // Debug.Log("<color=cyan>FOUR</color>");
-            // return (new node[2] { startAndFinish[1], startAndFinish[0] }, new float[2] { b, a });
+            //     return x < y ? 1 : -1;
+            // });
 
-            // float a = getAngle(n.location, n.connections[n.connections.Count - 1].location);
+            // float a = getAngle(vec3to2(vertices[n]), vec3to2(vertices[startAndFinish[0]]));
+            // float b = getAngle(vec3to2(vertices[n]), vec3to2(vertices[startAndFinish[1]]));
+            // if (b < 0)
+            // {
+            //     b += Mathf.PI * 2;
+            // }
+            // a += (Mathf.PI * 10);
+            // b += (Mathf.PI * 10);
 
-            // if (n.connections.Count == 1) {
-            //     float angle = getAngle(n.location, n.connections[0].location);
-            //     return new float[2]{a, a + (2 * Mathf.PI)};
-            // }
-
-            // node variableConnection = n.index != previous.connections[0].index ? n.connections[2] : n.connections[1];
-            // float b = getAngle(n.location, variableConnection.location);
-            // if (a < b && b - a > Mathf.PI) {
-            //     return (startAndFinish.ToArray(), new float[2]{a, b});
-            // } else if (a < b) { 
-            //     return (startAndFinish.ToArray(), new float[2]{a, b + (2 * Mathf.PI)});
-            // } else if (a - b > Mathf.PI) {
-            //     return (new node[2]{startAndFinish[1], startAndFinish[0]}, new float[2]{b, a});
-            // }
-            // return (new node[2]{startAndFinish[1], startAndFinish[0]}, new float[2]{b, a + (2 * Mathf.PI)});
-            // if (startAndFinish[0].index < startAndFinish[1].index) {
-            //     if (a < b) {
-            //         Debug.Log("<color=green>--></color> 1");
-            //         return (startAndFinish.ToArray(), new float[2]{a, b});
-            //     }
-            //     Debug.Log("<color=green>--></color> 2");
-            //     return (startAndFinish.ToArray(), new float[2]{a, b + (2 * Mathf.PI)});
-            // } else {
-            //     if (b < a) {
-            //         Debug.Log("<color=green>--></color> 3");
-            //         return (new node[2]{startAndFinish[1], startAndFinish[0]}, new float[2]{b, a});
-            //     }
-            //     Debug.Log("<color=green>--></color> 4");
-            //     return (new node[2]{startAndFinish[1], startAndFinish[0]}, new float[2]{b, a + (2 * Mathf.PI)});
-            // }
+            // return (startAndFinish.ToArray(), new float[2] { a, b });
         }
 
         private bool hasConnection(int origin, int connection)
         {
             return connections[origin].Contains(connection);
-            // foreach (int n in connections[origin])
-            // {
-            //     if (n == connection)
-            //     {
-            //         return true;
-            //     }
-            // }
-            // return false;
         }
 
         private IEnumerator setConnections(int n)
@@ -290,7 +290,7 @@ namespace Terrain
                 hasFinish = true;
             }
             Debug.Log($"<color=yellow>start:</color> {start}:{rotation}, <color=yellow>finish:</color> {finish}:{maxRotation}");
-            while (rotation < maxRotation)
+            while (start < finish && rotation < maxRotation)
             {
                 if (connections[n].Count != 0)
                 {
@@ -313,7 +313,8 @@ namespace Terrain
                         if (!hasConnection(connections[n][connections[n].Count - 1], variableConnection)) connections[connections[n][connections[n].Count - 1]].Add(variableConnection);
                         if (!hasConnection(variableConnection, connections[n][connections[n].Count - 1])) connections[variableConnection].Add(connections[n][connections[n].Count - 1]);
                     }
-                    if (!rendered.Contains(n)) {
+                    if (!rendered.Contains(n))
+                    {
                         rendered.Add(n);
                     }
                     updateHead(n);
@@ -325,7 +326,7 @@ namespace Terrain
                 int connectionIndex = vertices.Count;
                 connections.Add(new List<int>());
                 next.Add(0);
-                vertices.Add(location);
+                vertices.Add(new Vector3(location.x, 0, location.y));
                 if (connections[n].Count > 0)
                 {
                     addTriangle(n, connections[n][connections[n].Count - 1], connectionIndex);
