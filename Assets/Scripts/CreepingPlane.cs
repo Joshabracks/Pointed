@@ -170,9 +170,6 @@ namespace Terrain
                 return (new int[1] { n }, new float[2] { 0, (2 * Mathf.PI) });
             }
 
-
-            // float previousAngle = getAngle(vec3to2(vertices[n]), vec3to2(vertices[previous])) + Mathf.PI * 2;
-            // if (previousAngle < 0) previousAngle += Mathf.PI * 2;
             List<float> connectedAngles = new List<float>();
             List<int> connectedIndices = new List<int>();
             foreach (int index in connections[n])
@@ -181,10 +178,14 @@ namespace Terrain
                 if (rendered.Contains(index)) continue;
                 connectedIndices.Add(index);
                 float a = getAngle(vec3to2(vertices[n]), vec3to2(vertices[index])) + Mathf.PI * 2;
-                // if (a < 0) a += Mathf.PI * 2;
                 connectedAngles.Add(a);
             }
 
+            if (connectedIndices.Count < 2) {
+                return (new int[2] {0, 0}, new float[2] {0, 0});
+            }
+
+            Debug.Log(n + " --> <color=white>" + connectedIndices.Count + " : " + connections[n].Count + "</color>");
             int[] nodes = new int[2] { connectedIndices[0], connectedIndices[connectedIndices.Count - 1] };
             float[] angles = new float[2] { connectedAngles[0], connectedAngles[connectedIndices.Count - 1] };
 
@@ -210,60 +211,21 @@ namespace Terrain
             if (aa > ab && aa > ac)
             {
                 Debug.Log("<color=cyan>A</color>");
-                if (ab < ac) return (new int[2]{nodes[1], nodes[0]}, new float[2]{angles[1], angles[0]});
-                else return (new int[2]{nodes[0], nodes[1]}, new float[2]{angles[0], angles[1]});
+                if (ab < ac) return (new int[2] { nodes[1], nodes[0] }, new float[2] { angles[1], angles[0] });
+                else return (new int[2] { nodes[0], nodes[1] }, new float[2] { angles[0], angles[1] });
             }
             else if (ab > aa && ab > ac)
             {
                 Debug.Log("<color=cyan>B</color>");
-                if (aa < ac) return (new int[2]{nodes[1], nodes[0]}, new float[2]{angles[1], angles[0]});
-                else return (new int[2]{nodes[0], nodes[1]}, new float[2]{angles[0], angles[1]});
+                if (aa < ac) return (new int[2] { nodes[1], nodes[0] }, new float[2] { angles[1], angles[0] });
+                else return (new int[2] { nodes[0], nodes[1] }, new float[2] { angles[0], angles[1] });
             }
             else
             {
                 Debug.Log("<color=cyan>C</color>");
-                if (ab < aa) return (new int[2]{nodes[1], nodes[0]}, new float[2]{angles[1], angles[0]});
-                else return (new int[2]{nodes[0], nodes[1]}, new float[2]{angles[0], angles[1]});
+                if (ab < aa) return (new int[2] { nodes[1], nodes[0] }, new float[2] { angles[1], angles[0] });
+                else return (new int[2] { nodes[0], nodes[1] }, new float[2] { angles[0], angles[1] });
             }
-
-
-            // Debug.Log("<color=pink>GET RANGE</color>: " + n.index);
-            // if (connections[n].Count == 0)
-            // {
-            //     return (new int[1] { n }, new float[2] { 0, (2 * Mathf.PI) });
-            // }
-
-            // int threshhold = 1;
-            // List<int> startAndFinish = new List<int>();
-            // while (startAndFinish.Count < 2)
-            // {
-
-            //     foreach (int connection in connections[n])
-            //     {
-            //         // Debug.Log(connection.connections.Count);
-            //         if (connections[connection].Count == threshhold)
-            //         {
-            //             startAndFinish.Add(connection);
-            //         }
-            //     }
-            //     threshhold++;
-            // }
-
-            // startAndFinish.Sort(delegate (int x, int y)
-            // {
-            //     return x < y ? 1 : -1;
-            // });
-
-            // float a = getAngle(vec3to2(vertices[n]), vec3to2(vertices[startAndFinish[0]]));
-            // float b = getAngle(vec3to2(vertices[n]), vec3to2(vertices[startAndFinish[1]]));
-            // if (b < 0)
-            // {
-            //     b += Mathf.PI * 2;
-            // }
-            // a += (Mathf.PI * 10);
-            // b += (Mathf.PI * 10);
-
-            // return (startAndFinish.ToArray(), new float[2] { a, b });
         }
 
         private bool hasConnection(int origin, int connection)
@@ -275,6 +237,11 @@ namespace Terrain
         {
             // setting range of rotation for adding new nodes.
             var ranges = getRange(n);
+            if (ranges.nodes.Length == 2 && ranges.nodes[0] == ranges.nodes[1]) {
+                rendered.Add(n);
+                updateHead(n);
+                yield break;
+            }
             var range = ranges.angles;
             // float origin = range[0];
             float rotation = range[0];
@@ -289,8 +256,9 @@ namespace Terrain
                 finish = ranges.nodes[1];
                 hasFinish = true;
             }
-            Debug.Log($"<color=yellow>start:</color> {start}:{rotation}, <color=yellow>finish:</color> {finish}:{maxRotation}");
-            while (start < finish && rotation < maxRotation)
+            if (rotation > maxRotation) maxRotation += Mathf.PI * 2;
+            Debug.Log($"{previous}:{n} ==> <color=yellow>start:</color> {start}:{rotation}, <color=yellow>finish:</color> {finish}:{maxRotation}");
+            while (rotation < maxRotation)
             {
                 if (connections[n].Count != 0)
                 {
@@ -302,9 +270,16 @@ namespace Terrain
                     Debug.Log("<color=red>GOING OVERBOARD: CONNECT</color> ---> ");
                     if (hasFinish)
                     {
-                        addTriangle(n, connections[n][connections[n].Count - 1], finish);
-                        if (!hasConnection(connections[n][connections[n].Count - 1], finish)) connections[connections[n][connections[n].Count - 1]].Add(finish);
-                        if (!hasConnection(finish, connections[n][connections[n].Count - 1])) connections[finish].Add(connections[n][connections[n].Count - 1]);
+                        if (finish != connections[n][connections[n].Count - 1])
+                        {
+                            addTriangle(n, connections[n][connections[n].Count - 1], finish);
+                            if (!hasConnection(connections[n][connections[n].Count - 1], finish)) connections[connections[n][connections[n].Count - 1]].Add(finish);
+                            if (!hasConnection(finish, connections[n][connections[n].Count - 1])) connections[finish].Add(connections[n][connections[n].Count - 1]);
+                        }
+                        else 
+                        {
+                            rendered.Add(finish);
+                        }
                     }
                     else
                     {
@@ -312,6 +287,7 @@ namespace Terrain
                         addTriangle(n, connections[n][connections[n].Count - 1], variableConnection);
                         if (!hasConnection(connections[n][connections[n].Count - 1], variableConnection)) connections[connections[n][connections[n].Count - 1]].Add(variableConnection);
                         if (!hasConnection(variableConnection, connections[n][connections[n].Count - 1])) connections[variableConnection].Add(connections[n][connections[n].Count - 1]);
+
                     }
                     if (!rendered.Contains(n))
                     {
