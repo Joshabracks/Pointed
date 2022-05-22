@@ -10,11 +10,13 @@ namespace Terrain
     {
         public List<Vector3> vertices;
         public List<int> triangles;
+        private List<List<int>> connections;
+        private List<int> next;
         private int seed;
         private int size;
-        private node root;
-        private node previous;
-        private node head;
+        private int root = 0;
+        private int previous = 0;
+        private int head = 0;
         private Vector2 offset;
         public bool running;
         public List<int> rendered;
@@ -25,29 +27,35 @@ namespace Terrain
             vertices = new List<Vector3>();
             triangles = new List<int>();
             offset = new Vector2(xOffset * size, zOffset * size);
-            root = new node(offset, 0);
-            vertices.Add(new Vector3(root.location.x, 0, root.location.y));
-            head = root;
-            previous = root;
+            // root = new node(offset, 0);
+            
+            vertices.Add(new Vector3(offset.x, 0, offset.y));
+            // head = root;
+            // previous = root;
             rendered = new List<int>();
+            // rendered.Add(0);
+            connections = new List<List<int>>();
+            connections.Add(new List<int>());
+            next = new List<int>();
+            next.Add(0);
         }
 
-        private struct node
-        {
-            public List<node> connections;
-            public Vector2 location;
-            public int index;
-            // public bool rendered;
-            public int next;
-            public node(Vector2 location, int index)
-            {
-                this.location = location;
-                this.index = index;
-                connections = new List<node>();
-                // rendered = false;
-                next = 0;
-            }
-        }
+        // private struct node
+        // {
+        //     public List<node> connections;
+        //     public Vector2 location;
+        //     public int index;
+        //     // public bool rendered;
+        //     public int next;
+        //     public node(Vector2 location, int index)
+        //     {
+        //         this.location = location;
+        //         this.index = index;
+        //         connections = new List<node>();
+        //         // rendered = false;
+        //         next = 0;
+        //     }
+        // }
 
         private float getDistance(int x, int y, float i)
         {
@@ -67,29 +75,33 @@ namespace Terrain
             return angle + (Mathf.PI * 10);
         }
 
-        private void addTriangle(node a, node b, node c)
+        private Vector2 vec3to2(Vector3 a) {
+            return new Vector2(a.x, a.z);
+        }
+
+        private void addTriangle(int a, int b, int c)
         {
-            Vector2 midpoint = (a.location + b.location + c.location) / 3;
+            Vector2 midpoint = (vec3to2(vertices[a]) + vec3to2(vertices[b]) + vec3to2(vertices[c])) / 3;
 
-            float aa = getAngle(midpoint, a.location);
-            float ab = getAngle(midpoint, b.location);
-            float ac = getAngle(midpoint, c.location);
+            float aa = getAngle(midpoint, vec3to2(vertices[a]));
+            float ab = getAngle(midpoint, vec3to2(vertices[b]));
+            float ac = getAngle(midpoint, vec3to2(vertices[c]));
 
-            Debug.Log($"<color=blue>ADD TRI:</color> {a.index}, {b.index}, {c.index}");
+            Debug.Log($"<color=blue>ADD TRI:</color> {a}, {b}, {c}");
             if (aa > ab && aa > ac)
             {
-                if (ab > ac) triangles.AddRange(new int[3] { a.index, b.index, c.index });
-                else triangles.AddRange(new int[3] { a.index, c.index, b.index });
+                if (ab > ac) triangles.AddRange(new int[3] { a, b, c });
+                else triangles.AddRange(new int[3] { a, c, b });
             }
             else if (ab > aa && ab > ac)
             {
-                if (aa > ac) triangles.AddRange(new int[3] { b.index, a.index, c.index });
-                else triangles.AddRange(new int[3] { b.index, c.index, a.index });
+                if (aa > ac) triangles.AddRange(new int[3] { b, a, c });
+                else triangles.AddRange(new int[3] { b, c, a });
             }
             else
             {
-                if (aa > ab) triangles.AddRange(new int[3] { c.index, a.index, b.index });
-                else triangles.AddRange(new int[3] { c.index, b.index, a.index });
+                if (aa > ab) triangles.AddRange(new int[3] { c, a, b });
+                else triangles.AddRange(new int[3] { c, b, a });
             }
         }
 
@@ -117,55 +129,55 @@ namespace Terrain
             }
         }
 
-        private void updateHead(node n)
+        private void updateHead(int n)
         {
 
-            if (n.index == previous.index)
+            if (n == previous)
             {
                 Debug.Log("<color=white>ZERO</color>");
-                head = n.connections[n.next];
+                head = connections[n][next[n]];
                 previous = n;
-                previous.next++;
+                next[previous]++;
             }
-            else if (previous.next < previous.connections.Count)
+            else if (next[previous] < connections[previous].Count)
             {
                 Debug.Log("<color=white>ONE</color>");
-                head = previous.connections[previous.next];
-                previous.next++;
+                head = connections[previous][next[previous]];
+                next[previous]++;
             }
             else
             {
-                while (rendered.Contains(n.connections[n.next].index)) {
-                    n.next++;
+                while (rendered.Contains(connections[n][next[n]])) {
+                    next[n]++;
                 }
                 Debug.Log("<color=white>TWO</color>");
-                head = n.connections[n.next];
+                head = connections[n][next[n]];
                 previous = n;
-                previous.next++;
+                next[previous] ++;
             }
-            Debug.Log($"<color=yellow>UPDATE HEAD</color>P: {previous.index} H: {head.index}");
+            Debug.Log($"<color=yellow>UPDATE HEAD</color>P: {previous} H: {head}");
             // if (head.rendered) {
             //     updateHead(head);
             // }
         }
 
-        private (node[] nodes, float[] angles) getRange(node n)
+        private (int[] nodes, float[] angles) getRange(int n)
         {
             // Debug.Log("<color=pink>GET RANGE</color>: " + n.index);
-            if (n.connections.Count == 0)
+            if (connections[n].Count == 0)
             {
-                return (new node[1] { n }, new float[2] { 0, (2 * Mathf.PI) });
+                return (new int[1] { n }, new float[2] { 0, (2 * Mathf.PI) });
             }
 
             int threshhold = 1;
-            List<node> startAndFinish = new List<node>();
+            List<int> startAndFinish = new List<int>();
             while (startAndFinish.Count < 2)
             {
 
-                foreach (node connection in n.connections)
+                foreach (int connection in connections[n])
                 {
                     // Debug.Log(connection.connections.Count);
-                    if (connection.connections.Count == threshhold)
+                    if (connections[connection].Count == threshhold)
                     {
                         startAndFinish.Add(connection);
                     }
@@ -173,14 +185,14 @@ namespace Terrain
                 threshhold ++;
             }
 
-            startAndFinish.Sort(delegate (node x, node y)
+            startAndFinish.Sort(delegate (int x, int y)
             {
-                return x.index < y.index ? 1 : -1;
+                return x < y ? 1 : -1;
             });
             // Debug.Log($"<color=cyan>{startAndFinish[0].location} : {startAndFinish[1].location} : {n.location}</color>");
 
-            float a = getAngle(n.location, startAndFinish[0].location);
-            float b = getAngle(n.location, startAndFinish[1].location);
+            float a = getAngle(vec3to2(vertices[n]), vec3to2(vertices[startAndFinish[0]]));
+            float b = getAngle(vec3to2(vertices[n]), vec3to2(vertices[startAndFinish[1]]));
             if (b < a)
             {
                 b += Mathf.PI * 2;
@@ -246,19 +258,20 @@ namespace Terrain
             // }
         }
 
-        private bool hasConnection(node origin, node connection)
+        private bool hasConnection(int origin, int connection)
         {
-            foreach (node n in origin.connections)
-            {
-                if (n.index == connection.index)
-                {
-                    return true;
-                }
-            }
-            return false;
+            return connections[origin].Contains(connection);
+            // foreach (int n in connections[origin])
+            // {
+            //     if (n == connection)
+            //     {
+            //         return true;
+            //     }
+            // }
+            // return false;
         }
 
-        private IEnumerator setConnections(node n)
+        private IEnumerator setConnections(int n)
         {
             // setting range of rotation for adding new nodes.
             var ranges = getRange(n);
@@ -268,20 +281,20 @@ namespace Terrain
             float maxRotation = range[1];
             // float difference = (Mathf.PI * 2) - rotation;
 
-            node start = ranges.nodes[0];
-            node finish = new node();
+            int start = ranges.nodes[0];
+            int finish = 0;
             bool hasFinish = false;
             if (ranges.nodes.Length == 2)
             {
                 finish = ranges.nodes[1];
                 hasFinish = true;
             }
-            Debug.Log($"<color=yellow>start:</color> {start.index}:{rotation}, <color=yellow>finish:</color> {finish.index}:{maxRotation}");
+            Debug.Log($"<color=yellow>start:</color> {start}:{rotation}, <color=yellow>finish:</color> {finish}:{maxRotation}");
             while (rotation < maxRotation)
             {
-                if (n.connections.Count != 0)
+                if (connections[n].Count != 0)
                 {
-                    rotation += Mathf.PerlinNoise(n.location.x + seed + rotation * .531f, n.location.y + seed + rotation * .531f) + 1 * .66f;
+                    rotation += Mathf.PerlinNoise(vertices[n].x + seed + rotation * .531f, vertices[n].z + seed + rotation * .531f) + 1 * .66f;
                 }
                 Debug.Log($"{rotation} : {maxRotation}");
                 if (rotation > maxRotation)
@@ -289,39 +302,43 @@ namespace Terrain
                     Debug.Log("<color=red>GOING OVERBOARD: CONNECT</color> ---> ");
                     if (hasFinish)
                     {
-                        addTriangle(n, n.connections[n.connections.Count - 1], finish);
-                        if (!hasConnection(n.connections[n.connections.Count - 1], finish)) n.connections[n.connections.Count - 1].connections.Add(finish);
-                        if (!hasConnection(finish, n.connections[n.connections.Count - 1])) finish.connections.Add(n.connections[n.connections.Count - 1]);
+                        addTriangle(n, connections[n][connections[n].Count - 1], finish);
+                        if (!hasConnection(connections[n][connections[n].Count - 1], finish)) connections[connections[n][connections[n].Count - 1]].Add(finish);
+                        if (!hasConnection(finish, connections[n][connections[n].Count - 1])) connections[finish].Add(connections[n][connections[n].Count - 1]);
                     }
                     else
                     {
-                        node variableConnection = n.connections[0].index != previous.index ? n.connections[0] : n.connections[1];
-                        addTriangle(n, n.connections[n.connections.Count - 1], variableConnection);
-                        if (!hasConnection(n.connections[n.connections.Count - 1], variableConnection)) n.connections[n.connections.Count - 1].connections.Add(variableConnection);
-                        if (!hasConnection(variableConnection, n.connections[n.connections.Count - 1])) variableConnection.connections.Add(n.connections[n.connections.Count - 1]);
+                        int variableConnection = connections[n][0] != previous ? connections[n][0] : connections[n][1];
+                        addTriangle(n, connections[n][connections[n].Count - 1], variableConnection);
+                        if (!hasConnection(connections[n][connections[n].Count - 1], variableConnection)) connections[connections[n][connections[n].Count - 1]].Add(variableConnection);
+                        if (!hasConnection(variableConnection, connections[n][connections[n].Count - 1])) connections[variableConnection].Add(connections[n][connections[n].Count - 1]);
                     }
-                    rendered.Add(n.index);
+                    if (!rendered.Contains(n)) {
+                        rendered.Add(n);
+                    }
                     updateHead(n);
                     yield return new WaitForSecondsRealtime(.5f);
                     yield break;
                 }
 
-                Vector2 location = getPoint(n.location, getDistance((int)(n.location.x * 10), (int)(n.location.y * 10), rotation + n.index), rotation);
-                node connection = new node(location, vertices.Count);
-                vertices.Add(new Vector3(connection.location.x, 0, connection.location.y));
-                if (n.connections.Count > 0)
+                Vector2 location = getPoint(vec3to2(vertices[n]), getDistance((int)(vertices[n].x * 10), (int)(vertices[n].z * 10), rotation + n), rotation);
+                int connectionIndex = vertices.Count;
+                connections.Add(new List<int>());
+                next.Add(0);
+                vertices.Add(location);
+                if (connections[n].Count > 0)
                 {
-                    addTriangle(n, n.connections[n.connections.Count - 1], connection);
-                    if (!hasConnection(connection, n)) connection.connections.Add(n);
-                    if (!hasConnection(connection, n.connections[n.connections.Count - 1])) connection.connections.Add(n.connections[n.connections.Count - 1]);
-                    if (!hasConnection(n.connections[n.connections.Count - 1], connection)) n.connections[n.connections.Count - 1].connections.Add(connection);
+                    addTriangle(n, connections[n][connections[n].Count - 1], connectionIndex);
+                    if (!hasConnection(connectionIndex, n)) connections[connectionIndex].Add(n);
+                    if (!hasConnection(connectionIndex, connections[n][connections[n].Count - 1])) connections[connectionIndex].Add(connections[n][connections[n].Count - 1]);
+                    if (!hasConnection(connections[n][connections[n].Count - 1], connectionIndex)) connections[connections[n][connections[n].Count - 1]].Add(connectionIndex);
                     // connection.connections.Add(n.connections[n.connections.Count - 1]);
-                    if (!hasConnection(n, connection)) n.connections.Add(connection);
+                    if (!hasConnection(n, connectionIndex)) connections[n].Add(connectionIndex);
                 }
                 else
                 {
-                    connection.connections.Add(n);
-                    n.connections.Add(connection);
+                    connections[connectionIndex].Add(n);
+                    connections[n].Add(connectionIndex);
                 }
                 yield return new WaitForSecondsRealtime(.5f);
                 // yield return new WaitForEndOfFrame();
