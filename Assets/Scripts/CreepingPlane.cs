@@ -15,7 +15,7 @@ namespace Terrain
         private int seed;
         private int size;
         private int root = 0;
-        private int previous = 0;
+        private List<int> previous;
         private int head = 0;
         private Vector2 offset;
         public bool running;
@@ -36,6 +36,8 @@ namespace Terrain
             // rendered.Add(0);
             connections = new List<List<int>>();
             connections.Add(new List<int>());
+            previous = new List<int>();
+            previous.Add(0);
             next = new List<int>();
             next.Add(0);
         }
@@ -133,18 +135,18 @@ namespace Terrain
         private void updateHead(int n)
         {
 
-            if (n == previous)
+            if (n == previous[n])
             {
                 Debug.Log("<color=white>ZERO</color>");
                 head = connections[n][next[n]];
-                previous = n;
-                next[previous]++;
+                // previous = n;
+                next[previous[n]]++;
             }
-            else if (next[previous] < connections[previous].Count)
+            else if (next[previous[n]] < connections[previous[n]].Count)
             {
                 Debug.Log("<color=white>ONE</color>");
-                head = connections[previous][next[previous]];
-                next[previous]++;
+                head = connections[previous[n]][next[previous[n]]];
+                next[previous[n]]++;
             }
             else
             {
@@ -154,10 +156,10 @@ namespace Terrain
                 }
                 Debug.Log("<color=white>TWO</color>");
                 head = connections[n][next[n]];
-                previous = n;
-                next[previous]++;
+                // previous = n;
+                next[previous[n]]++;
             }
-            Debug.Log($"<color=yellow>UPDATE HEAD</color>P: {previous} H: {head}");
+            Debug.Log($"<color=yellow>UPDATE HEAD</color>P: {previous[n]} H: {head}");
             // if (head.rendered) {
             //     updateHead(head);
             // }
@@ -174,7 +176,7 @@ namespace Terrain
             List<int> connectedIndices = new List<int>();
             foreach (int index in connections[n])
             {
-                if (index == previous) continue;
+                if (index == previous[n]) continue;
                 if (rendered.Contains(index)) continue;
                 connectedIndices.Add(index);
                 float a = getAngle(vec3to2(vertices[n]), vec3to2(vertices[index])) + Mathf.PI * 2;
@@ -203,10 +205,10 @@ namespace Terrain
                 }
             }
 
-            Vector2 midpoint = (vec3to2(vertices[nodes[0]]) + vec3to2(vertices[nodes[1]]) + vec3to2(vertices[previous])) / 3;
+            Vector2 midpoint = (vec3to2(vertices[nodes[0]]) + vec3to2(vertices[nodes[1]]) + vec3to2(vertices[previous[n]])) / 3;
             float aa = getAngle(midpoint, vec3to2(vertices[nodes[0]]));
             float ab = getAngle(midpoint, vec3to2(vertices[nodes[1]]));
-            float ac = getAngle(midpoint, vec3to2(vertices[previous]));
+            float ac = getAngle(midpoint, vec3to2(vertices[previous[n]]));
 
             if (aa > ab && aa > ac)
             {
@@ -257,7 +259,7 @@ namespace Terrain
                 hasFinish = true;
             }
             if (rotation > maxRotation) maxRotation += Mathf.PI * 2;
-            Debug.Log($"{previous}:{n} ==> <color=yellow>start:</color> {start}:{rotation}, <color=yellow>finish:</color> {finish}:{maxRotation}");
+            Debug.Log($"{previous[n]}:{n} ==> <color=yellow>start:</color> {start}:{rotation}, <color=yellow>finish:</color> {finish}:{maxRotation}");
             while (rotation < maxRotation)
             {
                 if (connections[n].Count != 0)
@@ -283,7 +285,7 @@ namespace Terrain
                     }
                     else
                     {
-                        int variableConnection = connections[n][0] != previous ? connections[n][0] : connections[n][1];
+                        int variableConnection = connections[n][0] != previous[n] ? connections[n][0] : connections[n][1];
                         addTriangle(n, connections[n][connections[n].Count - 1], variableConnection);
                         if (!hasConnection(connections[n][connections[n].Count - 1], variableConnection)) connections[connections[n][connections[n].Count - 1]].Add(variableConnection);
                         if (!hasConnection(variableConnection, connections[n][connections[n].Count - 1])) connections[variableConnection].Add(connections[n][connections[n].Count - 1]);
@@ -303,6 +305,7 @@ namespace Terrain
                 connections.Add(new List<int>());
                 next.Add(0);
                 vertices.Add(new Vector3(location.x, 0, location.y));
+                previous.Add(n);
                 if (connections[n].Count > 0)
                 {
                     addTriangle(n, connections[n][connections[n].Count - 1], connectionIndex);
