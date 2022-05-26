@@ -13,34 +13,52 @@ namespace Terrain
         Mesh mesh;
         MeshRenderer meshRenderer;
         MeshFilter meshFilter;
+        MeshGrid grid;
+        public int seed = 1337;
+        private int previous;
         void Start()
         {
             // creepingPlane = new CreepingPlane(0, 0, 734, 20);
-            MeshGrid grid = new MeshGrid(1337, 5, .5f);
-            grid.Build();
             meshRenderer = gameObject.AddComponent<MeshRenderer>();
             meshFilter = gameObject.AddComponent<MeshFilter>();
             meshRenderer.material = material;
             mesh = new Mesh();
+            grid = new MeshGrid(seed, 8, .5f);
+            grid.running = true;
+            // StartCoroutine(grid.Build());
+            grid.Build();
             mesh.vertices = grid.vertices.ToArray();
             mesh.triangles = grid.triangles.ToArray();
+            // mesh.colors = grid.colors;
             mesh.RecalculateNormals();
             mesh.RecalculateTangents();
             mesh.RecalculateBounds();
             meshFilter.sharedMesh = mesh;
+            previous = seed;
         }
 
         // Update is called once per frame
         // void Update()
         // {
-        //     if (!creepingPlane.running) {
-        //         creepingPlane.running = true;
-        //         StartCoroutine(creepingPlane.Build());
-        //     }
-        //     mesh.vertices = creepingPlane.vertices.ToArray();
-        //     mesh.triangles = creepingPlane.triangles.ToArray();
-        //     mesh.RecalculateBounds();
-        //     mesh.RecalculateNormals();
+            // if (previous != seed)
+            // {
+            //     Debug.Log(previous);
+            //     if (!grid.running)
+            //     {
+            //         grid.running = true;
+            //         grid.seed = seed;
+            //         StartCoroutine(grid.Build());
+            //     } else {
+            //         previous = seed;
+            //         mesh.vertices = grid.vertices.ToArray();
+            //         mesh.triangles = grid.triangles.ToArray();
+            //         // mesh.colors = grid.colors;
+            //         mesh.RecalculateNormals();
+            //         mesh.RecalculateTangents();
+            //         mesh.RecalculateBounds();
+            //         // meshFilter.sharedMesh = mesh;
+            //     }
+            // }
         // }
     }
 }

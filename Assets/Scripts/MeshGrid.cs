@@ -6,10 +6,12 @@ using UnityEngine;
 public class MeshGrid
 {
 
-    private int seed;
+    public int seed;
     private int size;
+    public bool running = false;
     private float threshold;
     public List<Vector3> vertices;
+    // public Color[] colors;
     public List<int> triangles;
     public MeshGrid(int seed, int size, float threshold)
     {
@@ -39,13 +41,26 @@ public class MeshGrid
                         0,
                         zVal
                     ));
+                    // yield return new WaitForEndOfFrame();
                 }
             }
         }
         // Debug.Log("VERTICES: " + vertices.Count);
         triangulate();
+        // color();
         // Debug.Log("TRIANGLES: " + triangles.Count / 3);
     }
+
+    // private void color() {
+    //     colors = new Color[vertices.Count];
+    //     for (int i = 0; i < vertices.Count; i++) {
+    //         colors[i] = new Color(
+    //             Mathf.Abs(Mathf.PerlinNoise(vertices[i].x + seed * 0.1234f, vertices[i].z + seed * 0.9851f)),
+    //             Mathf.Abs(Mathf.PerlinNoise(vertices[i].x + seed * 0.254f, vertices[i].z + seed * 0.7156f)),
+    //             Mathf.Abs(Mathf.PerlinNoise(vertices[i].x + seed * 0.4118f, vertices[i].z + seed * 0.666f))
+    //         );
+    //     }
+    // }
 
     private void triangulate()
     {
@@ -59,21 +74,23 @@ public class MeshGrid
                 for (int c = 0; c < vertices.Count; c++)
                 {
                     if (c == a || c == b) continue;
-                    if (collinear(vertices[a].x, vertices[a].z, vertices[b].x, vertices[b].z, vertices[c].x, vertices[c].z)) continue;
+                    // if (collinear(vertices[a].x, vertices[a].z, vertices[b].x, vertices[b].z, vertices[c].x, vertices[c].z)) continue;
                     possibleTris.Add(new int[3] { a, b, c });
                 }
             }
         }
+
         List<int[]> pass1 = new List<int[]>();
+
         foreach (int[] tri in possibleTris)
         {
             Vector2 circumcenter = getCircumcenter(vertices[tri[0]], vertices[tri[1]], vertices[tri[2]]);
             float radius = Vector2.Distance(circumcenter, new Vector2(vertices[tri[0]].x, vertices[tri[0]].z));
-            float radius2 = Vector2.Distance(circumcenter, new Vector2(vertices[tri[1]].x, vertices[tri[1]].z));
-            float radius3 = Vector2.Distance(circumcenter, new Vector2(vertices[tri[2]].x, vertices[tri[2]].z));
+            // float radius2 = Vector2.Distance(circumcenter, new Vector2(vertices[tri[1]].x, vertices[tri[1]].z));
+            // float radius3 = Vector2.Distance(circumcenter, new Vector2(vertices[tri[2]].x, vertices[tri[2]].z));
 
-            if (radius2 > radius) radius = radius2;
-            if (radius3 > radius) radius = radius3;
+            // if (radius2 > radius) radius = radius2;
+            // if (radius3 > radius) radius = radius3;
             if (radius == float.NaN) continue;
             
             bool isBad = false;
@@ -82,7 +99,7 @@ public class MeshGrid
                 if (i == tri[0] || i == tri[1] || i == tri[2]) continue;
                 if (
                     Vector2.Distance(circumcenter, new Vector2(vertices[i].x, vertices[i].z)) < radius
-                    || PointInTriangle(vertices[i], vertices[tri[0]], vertices[tri[1]], vertices[tri[2]])
+                    // || PointInTriangle(vertices[i], vertices[tri[0]], vertices[tri[1]], vertices[tri[2]])
                     )
                 {
                     isBad = true;
@@ -110,6 +127,8 @@ public class MeshGrid
         foreach (int[] tri in pass2) {
             addTriangle(tri[0], tri[1], tri[2]);
         }
+        // yield return new WaitForEndOfFrame();
+        running = false;
     }
 
     private float getAngle(Vector2 a, Vector2 b)
