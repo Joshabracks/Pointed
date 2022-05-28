@@ -43,7 +43,7 @@ public class Chunk : MonoBehaviour
         this.offset = offset;
         vertices = new List<Vector3>();
         triangles = new List<int>();
-        gameObject.transform.position = new Vector3(offset.x, 0, offset.y);
+        gameObject.transform.position = new Vector3(offset.x * size, 0, offset.y * size);
         gameObject.name = $"{offset.x},{offset.y}";
     }
 
@@ -78,7 +78,8 @@ public class Chunk : MonoBehaviour
             }
         }
         if (NeighborVertices != null) {
-            vertices.AddRange(NeighborVertices);
+            Debug.Log($"{NeighborVertices.Count}, {vertices.Count}");
+            // vertices.AddRange(NeighborVertices);
         }
         vertices.Add(new Vector3(size / 2, 0, size * 1.5f)); // North vertex
         vertices.Add(new Vector3(-(size / 2), 0, (size / 2))); // West vertex
@@ -251,8 +252,6 @@ public class Chunk : MonoBehaviour
         mesh = new Mesh();
         mesh.vertices = vertices.ToArray();
         mesh.triangles = triangles.ToArray();
-        vertices = null;
-        triangles = null;
         mesh.RecalculateNormals();
         mesh.RecalculateTangents();
         mesh.RecalculateBounds();
