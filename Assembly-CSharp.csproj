@@ -37,7 +37,7 @@
   </PropertyGroup>
   <ItemGroup>
      <Compile Include="Assets\Scripts\Plane.cs" />
-     <Compile Include="Assets\Scripts\MeshGrid.cs" />
+     <Compile Include="Assets\Scripts\Chunk.cs" />
     <Reference Include="UnityEngine">
         <HintPath>D:\Unity\2021.3.2f1\Editor\Data\Managed\UnityEngine\UnityEngine.dll</HintPath>
     </Reference>

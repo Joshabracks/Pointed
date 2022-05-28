@@ -357,7 +357,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   material: {fileID: 10302, guid: 0000000000000000f000000000000000, type: 0}
-  chunkSize: 25
+  chunkSize: 16
   seed: 1337
 --- !u!4 &559210324
 Transform:

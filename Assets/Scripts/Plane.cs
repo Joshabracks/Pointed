@@ -9,31 +9,25 @@ namespace Terrain
     public class Plane : MonoBehaviour
     {
         public Material material;
-        Mesh mesh;
-        MeshRenderer meshRenderer;
-        MeshFilter meshFilter;
-        MeshGrid grid;
+        List<Chunk> chunks;
         public int chunkSize = 16;
-
         public int seed = 1337;
-        private int previous;
+        // private Chunk template;
+
         void Start()
         {
-            meshRenderer = gameObject.AddComponent<MeshRenderer>();
-            meshFilter = gameObject.AddComponent<MeshFilter>();
-            meshRenderer.material = material;
-            mesh = new Mesh();
-            grid = new MeshGrid(seed, chunkSize, .5f);
-            grid.running = true;
-            grid.Build();
-            mesh.vertices = grid.vertices.ToArray();
-            mesh.triangles = grid.triangles.ToArray();
-            mesh.RecalculateNormals();
-            mesh.RecalculateTangents();
-            mesh.RecalculateBounds();
-            meshFilter.sharedMesh = mesh;
-            previous = seed;
-            
+            // template = gameObject.AddComponent<Chunk>();
+            chunks = new List<Chunk>();
+            for (int x = 0; x < 3; x++) {
+                for (int z = 0; z < 3; z++) {
+                    GameObject obj = new GameObject();
+                    chunks.Add(obj.AddComponent<Chunk>());
+                    chunks[chunks.Count - 1].Init(seed, chunkSize, .5f, new Vector2(x * chunkSize, z * chunkSize), material);
+                    chunks[chunks.Count - 1].AddVertices();
+                    chunks[chunks.Count - 1].Triangulate();
+                    chunks[chunks.Count - 1].Render();
+                }
+            }
         }
 
         // Update is called once per frame
