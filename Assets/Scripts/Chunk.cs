@@ -134,44 +134,32 @@ public class Chunk : MonoBehaviour
                     float xVal = offsetX + x + (offset.x * size);
                     float zVal = offsetZ + z + (offset.y * size);
                     Vector3 vertex = new Vector3(xVal, 0, zVal);
-                    vertices.Add (vertex);
+                    vertices.Add(vertex);
                 }
             }
         }
 
-        if (NeighborVerticesEast != null)
-        {
-            vertices.AddRange (NeighborVerticesEast);
+        // if (NeighborVerticesEast != null) vertices.AddRange(NeighborVerticesEast);
+        // if (NeighborVerticesWest != null) vertices.AddRange(NeighborVerticesWest);
+        // if (NeighborVerticesNorth != null) vertices.AddRange(NeighborVerticesNorth);
+        // if (NeighborVerticesSouth != null) vertices.AddRange(NeighborVerticesSouth);
+        if (NeighborVerticesEast != null) foreach(Vector3 vertex in NeighborVerticesEast) {
+            if (!vertices.Contains(vertex)) vertices.Add(vertex);
         }
-        if (NeighborVerticesWest != null)
-        {
-            vertices.AddRange (NeighborVerticesWest);
+        if (NeighborVerticesWest != null) foreach(Vector3 vertex in NeighborVerticesWest) {
+            if (!vertices.Contains(vertex)) vertices.Add(vertex);
         }
-        if (NeighborVerticesNorth != null)
-        {
-            vertices.AddRange (NeighborVerticesNorth);
+        if (NeighborVerticesNorth != null) foreach(Vector3 vertex in NeighborVerticesNorth) {
+            if (!vertices.Contains(vertex)) vertices.Add(vertex);
         }
-        if (NeighborVerticesSouth != null)
-        {
-            vertices.AddRange (NeighborVerticesSouth);
+        if (NeighborVerticesSouth != null) foreach(Vector3 vertex in NeighborVerticesSouth) {
+            if (!vertices.Contains(vertex)) vertices.Add(vertex);
         }
-
-        vertices
-            .Add(new Vector3((size / 2) + (offset.x * size),
-                0,
-                (size * 1.5f) + (offset.y * size))); // North vertex
-        vertices
-            .Add(new Vector3(-(size / 2) + (offset.x * size),
-                0,
-                (size / 2) + (offset.y * size))); // West vertex
-        vertices
-            .Add(new Vector3((size * 1.5f) + (offset.x * size),
-                0,
-                (size / 2) + (offset.y * size))); // East vertex
-        vertices
-            .Add(new Vector3((size / 2) + (offset.x * size),
-                0,
-                -(size / 2) + (offset.y * size))); // South vertex
+        
+        vertices.Add(new Vector3((size / 2) + (offset.x * size), 0, (size * 1.5f) + (offset.y * size))); // North vertex
+        vertices.Add(new Vector3(-(size / 2) + (offset.x * size), 0, (size / 2) + (offset.y * size))); // West vertex
+        vertices.Add(new Vector3((size * 1.5f) + (offset.x * size), 0, (size / 2) + (offset.y * size))); // East vertex
+        vertices.Add(new Vector3((size / 2) + (offset.x * size), 0, -(size / 2) + (offset.y * size))); // South vertex
     }
 
     public void Triangulate() // implimentation of delaunay triangulation
@@ -202,12 +190,7 @@ public class Chunk : MonoBehaviour
                     for (int i = 0; i < vertices.Count; i++)
                     {
                         if (i == a || i == b || i == c) continue;
-                        if (
-                            Vector2
-                                .Distance(circumcenter,
-                                new Vector2(vertices[i].x, vertices[i].z)) <
-                            radius
-                        )
+                        if (Vector2.Distance(circumcenter, new Vector2(vertices[i].x, vertices[i].z)) < radius)
                         {
                             isBad = true;
                             break;
@@ -222,50 +205,26 @@ public class Chunk : MonoBehaviour
                             if (a == vertices.Count - 4)
                             {
                                 // South vertex
-                                if (
-                                    !NorthVertices.Contains(b) &&
-                                    b < vertices.Count - 4
-                                ) NorthVertices.Add(b);
-                                if (
-                                    !NorthVertices.Contains(c) &&
-                                    c < vertices.Count - 4
-                                ) NorthVertices.Add(c);
+                                if (!SouthVertices.Contains(b) && b < vertices.Count - 4) SouthVertices.Add(b);
+                                if (!SouthVertices.Contains(c) && c < vertices.Count - 4) SouthVertices.Add(c);
                             }
                             else if (a == vertices.Count - 3)
                             {
                                 // East vertex
-                                if (
-                                    !EastVertices.Contains(b) &&
-                                    b < vertices.Count - 4
-                                ) EastVertices.Add(b);
-                                if (
-                                    !EastVertices.Contains(c) &&
-                                    c < vertices.Count - 4
-                                ) EastVertices.Add(c);
+                                if (!EastVertices.Contains(b) && b < vertices.Count - 4) EastVertices.Add(b);
+                                if (!EastVertices.Contains(c) && c < vertices.Count - 4) EastVertices.Add(c);
                             }
                             else if (a == vertices.Count - 2)
                             {
                                 // West vertex
-                                if (
-                                    !WestVertices.Contains(b) &&
-                                    b < vertices.Count - 4
-                                ) WestVertices.Add(b);
-                                if (
-                                    !WestVertices.Contains(c) &&
-                                    c < vertices.Count - 4
-                                ) WestVertices.Add(c);
+                                if (!WestVertices.Contains(b) && b < vertices.Count - 4) WestVertices.Add(b);
+                                if (!WestVertices.Contains(c) && c < vertices.Count - 4) WestVertices.Add(c);
                             }
                             else
                             {
                                 // North vertex
-                                if (
-                                    !NorthVertices.Contains(b) &&
-                                    b < vertices.Count - 4
-                                ) NorthVertices.Add(b);
-                                if (
-                                    !NorthVertices.Contains(c) &&
-                                    c < vertices.Count - 4
-                                ) NorthVertices.Add(c);
+                                if (!NorthVertices.Contains(b) && b < vertices.Count - 4) NorthVertices.Add(b);
+                                if (!NorthVertices.Contains(c) && c < vertices.Count - 4) NorthVertices.Add(c);
                             }
                         }
                         if (b >= vertices.Count - 4)
@@ -274,50 +233,26 @@ public class Chunk : MonoBehaviour
                             if (b == vertices.Count - 4)
                             {
                                 // South vertex
-                                if (
-                                    !NorthVertices.Contains(a) &&
-                                    a < vertices.Count - 4
-                                ) NorthVertices.Add(a);
-                                if (
-                                    !NorthVertices.Contains(c) &&
-                                    c < vertices.Count - 4
-                                ) NorthVertices.Add(c);
+                                if (!SouthVertices.Contains(a) && a < vertices.Count - 4) SouthVertices.Add(a);
+                                if (!SouthVertices.Contains(c) && c < vertices.Count - 4) SouthVertices.Add(c);
                             }
                             else if (b == vertices.Count - 3)
                             {
                                 // East vertex
-                                if (
-                                    !EastVertices.Contains(a) &&
-                                    a < vertices.Count - 4
-                                ) EastVertices.Add(a);
-                                if (
-                                    !EastVertices.Contains(c) &&
-                                    c < vertices.Count - 4
-                                ) EastVertices.Add(c);
+                                if (!EastVertices.Contains(a) && a < vertices.Count - 4) EastVertices.Add(a);
+                                if (!EastVertices.Contains(c) && c < vertices.Count - 4) EastVertices.Add(c);
                             }
                             else if (b == vertices.Count - 2)
                             {
                                 // West vertex
-                                if (
-                                    !WestVertices.Contains(a) &&
-                                    a < vertices.Count - 4
-                                ) WestVertices.Add(a);
-                                if (
-                                    !WestVertices.Contains(c) &&
-                                    c < vertices.Count - 4
-                                ) WestVertices.Add(c);
+                                if (!WestVertices.Contains(a) && a < vertices.Count - 4) WestVertices.Add(a);
+                                if (!WestVertices.Contains(c) && c < vertices.Count - 4) WestVertices.Add(c);
                             }
                             else
                             {
                                 // North vertex
-                                if (
-                                    !NorthVertices.Contains(a) &&
-                                    a < vertices.Count - 4
-                                ) NorthVertices.Add(a);
-                                if (
-                                    !NorthVertices.Contains(c) &&
-                                    c < vertices.Count - 4
-                                ) NorthVertices.Add(c);
+                                if (!NorthVertices.Contains(a) && a < vertices.Count - 4) NorthVertices.Add(a);
+                                if (!NorthVertices.Contains(c) && c < vertices.Count - 4) NorthVertices.Add(c);
                             }
                         }
                         if (c >= vertices.Count - 4)
@@ -326,55 +261,31 @@ public class Chunk : MonoBehaviour
                             if (c == vertices.Count - 4)
                             {
                                 // South vertex
-                                if (
-                                    !SouthVertices.Contains(b) &&
-                                    b < vertices.Count - 4
-                                ) SouthVertices.Add(b);
-                                if (
-                                    !SouthVertices.Contains(a) &&
-                                    a < vertices.Count - 4
-                                ) SouthVertices.Add(a);
+                                if (!SouthVertices.Contains(b) && b < vertices.Count - 4) SouthVertices.Add(b);
+                                if (!SouthVertices.Contains(a) && a < vertices.Count - 4) SouthVertices.Add(a);
                             }
                             else if (c == vertices.Count - 3)
                             {
                                 // East vertex
-                                if (
-                                    !EastVertices.Contains(b) &&
-                                    b < vertices.Count - 4
-                                ) EastVertices.Add(b);
-                                if (
-                                    !EastVertices.Contains(a) &&
-                                    a < vertices.Count - 4
-                                ) EastVertices.Add(a);
+                                if (!EastVertices.Contains(b) && b < vertices.Count - 4) EastVertices.Add(b);
+                                if (!EastVertices.Contains(a) && a < vertices.Count - 4) EastVertices.Add(a);
                             }
                             else if (c == vertices.Count - 2)
                             {
                                 // West vertex
-                                if (
-                                    !WestVertices.Contains(b) &&
-                                    b < vertices.Count - 4
-                                ) WestVertices.Add(b);
-                                if (
-                                    !WestVertices.Contains(a) &&
-                                    a < vertices.Count - 4
-                                ) WestVertices.Add(a);
+                                if (!WestVertices.Contains(b) && b < vertices.Count - 4) WestVertices.Add(b);
+                                if (!WestVertices.Contains(a) && a < vertices.Count - 4) WestVertices.Add(a);
                             }
                             else
                             {
                                 // North vertex
-                                if (
-                                    !NorthVertices.Contains(b) &&
-                                    b < vertices.Count - 4
-                                ) NorthVertices.Add(b);
-                                if (
-                                    !NorthVertices.Contains(a) &&
-                                    a < vertices.Count - 4
-                                ) NorthVertices.Add(a);
+                                if (!NorthVertices.Contains(b) && b < vertices.Count - 4) NorthVertices.Add(b);
+                                if (!NorthVertices.Contains(a) && a < vertices.Count - 4) NorthVertices.Add(a);
                             }
                         }
                         if (!neighborAdded)
                         {
-                            addTriangle (a, b, c);
+                            addTriangle(a, b, c);
                         }
                     }
                 }
