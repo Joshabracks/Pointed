@@ -42,52 +42,6 @@ public class Chunk : MonoBehaviour
     private Vector2 offset;
     private int vertexNeighborCutoff;
 
-    void OnDrawGizmos()
-    {
-        if (Selection.Contains(gameObject))
-        {
-            if (NeighborVerticesEast != null)
-            {
-                Gizmos.color = Color.green;
-                foreach (Vector3 v in NeighborVerticesEast)
-                {
-                    Gizmos.DrawSphere(v, 0.1f);
-                }
-            }
-
-            if (NeighborVerticesWest != null)
-            {
-                Gizmos.color = Color.magenta;
-                foreach (Vector3 v in NeighborVerticesWest)
-                {
-                    Gizmos.DrawSphere(v, 0.1f);
-                }
-            }
-
-            if (NeighborVerticesNorth != null)
-            {
-                Gizmos.color = Color.yellow;
-                foreach (Vector3 v in NeighborVerticesNorth)
-                {
-                    Gizmos.DrawSphere(v, 0.1f);
-                }
-            }
-
-            if (NeighborVerticesSouth != null)
-            {
-                Gizmos.color = Color.cyan;
-                foreach (Vector3 v in NeighborVerticesSouth)
-                {
-                    Gizmos.DrawSphere(v, 0.1f);
-                }
-            }
-        }
-        Gizmos.color = Color.yellow;
-        foreach (Vector3 v in overlapCenters) {
-            Gizmos.DrawSphere(v, .25f);
-        }
-    }
-
     public void Init(
         int seed,
         int size,
