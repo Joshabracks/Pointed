@@ -37,7 +37,6 @@ public class Chunk : MonoBehaviour
     public Vector3[] NeighborVerticesEast = null;
 
     public Vector3[] NeighborVerticesWest = null;
-
     public List<int> triangles;
 
     private Vector2 offset;
@@ -83,6 +82,10 @@ public class Chunk : MonoBehaviour
                 }
             }
         }
+        Gizmos.color = Color.yellow;
+        foreach (Vector3 v in overlapCenters) {
+            Gizmos.DrawSphere(v, .25f);
+        }
     }
 
     public void Init(
@@ -100,9 +103,6 @@ public class Chunk : MonoBehaviour
         this.offset = offset;
         vertices = new List<Vector3>();
         triangles = new List<int>();
-
-        // gameObject.transform.position =
-        //     new Vector3(offset.x * size, 0, offset.y * size);
         gameObject.name = $"{offset.x},{offset.y}";
     }
 
@@ -139,23 +139,23 @@ public class Chunk : MonoBehaviour
             }
         }
 
-        // if (NeighborVerticesEast != null) vertices.AddRange(NeighborVerticesEast);
-        // if (NeighborVerticesWest != null) vertices.AddRange(NeighborVerticesWest);
-        // if (NeighborVerticesNorth != null) vertices.AddRange(NeighborVerticesNorth);
-        // if (NeighborVerticesSouth != null) vertices.AddRange(NeighborVerticesSouth);
-        if (NeighborVerticesEast != null) foreach(Vector3 vertex in NeighborVerticesEast) {
-            if (!vertices.Contains(vertex)) vertices.Add(vertex);
-        }
-        if (NeighborVerticesWest != null) foreach(Vector3 vertex in NeighborVerticesWest) {
-            if (!vertices.Contains(vertex)) vertices.Add(vertex);
-        }
-        if (NeighborVerticesNorth != null) foreach(Vector3 vertex in NeighborVerticesNorth) {
-            if (!vertices.Contains(vertex)) vertices.Add(vertex);
-        }
-        if (NeighborVerticesSouth != null) foreach(Vector3 vertex in NeighborVerticesSouth) {
-            if (!vertices.Contains(vertex)) vertices.Add(vertex);
-        }
-        
+        if (NeighborVerticesEast != null) foreach (Vector3 vertex in NeighborVerticesEast)
+            {
+                if (!vertices.Contains(vertex)) vertices.Add(vertex);
+            }
+        if (NeighborVerticesWest != null) foreach (Vector3 vertex in NeighborVerticesWest)
+            {
+                if (!vertices.Contains(vertex)) vertices.Add(vertex);
+            }
+        if (NeighborVerticesNorth != null) foreach (Vector3 vertex in NeighborVerticesNorth)
+            {
+                if (!vertices.Contains(vertex)) vertices.Add(vertex);
+            }
+        if (NeighborVerticesSouth != null) foreach (Vector3 vertex in NeighborVerticesSouth)
+            {
+                if (!vertices.Contains(vertex)) vertices.Add(vertex);
+            }
+
         vertices.Add(new Vector3((size / 2) + (offset.x * size), 0, (size * 1.5f) + (offset.y * size))); // North vertex
         vertices.Add(new Vector3(-(size / 2) + (offset.x * size), 0, (size / 2) + (offset.y * size))); // West vertex
         vertices.Add(new Vector3((size * 1.5f) + (offset.x * size), 0, (size / 2) + (offset.y * size))); // East vertex
@@ -285,7 +285,99 @@ public class Chunk : MonoBehaviour
                         }
                         if (!neighborAdded)
                         {
-                            addTriangle(a, b, c);
+                            bool na = false;
+                            bool nb = false;
+                            bool nc = false;
+                            if (NeighborVerticesEast != null)
+                            {
+                                foreach (Vector3 vertex in NeighborVerticesEast)
+                                {
+                                    if (!na && Vector3.Equals(vertices[a], vertex))
+                                    {
+                                        na = true;
+                                    }
+                                    if (!nb && Vector3.Equals(vertices[b], vertex))
+                                    {
+                                        nb = true;
+                                    }
+                                    if (!nc && Vector3.Equals(vertices[c], vertex))
+                                    {
+                                        nc = true;
+                                    }
+                                    if (na && nb && nc) break;
+                                }
+                            }
+                            if (NeighborVerticesWest != null && (!na || !nb || !nc))
+                            {
+                                foreach (Vector3 vertex in NeighborVerticesWest)
+                                {
+                                    if (!na && Vector3.Equals(vertices[a], vertex))
+                                    {
+                                        na = true;
+                                    }
+                                    if (!nb && Vector3.Equals(vertices[b], vertex))
+                                    {
+                                        nb = true;
+                                    }
+                                    if (!nc && Vector3.Equals(vertices[c], vertex))
+                                    {
+                                        nc = true;
+                                    }
+                                    if (na && nb && nc) break;
+                                }
+                            }
+                            if (NeighborVerticesNorth != null && (!na || !nb || !nc))
+                            {
+                                foreach (Vector3 vertex in NeighborVerticesNorth)
+                                {
+                                    if (!na && Vector3.Equals(vertices[a], vertex))
+                                    {
+                                        na = true;
+                                    }
+                                    if (!nb && Vector3.Equals(vertices[b], vertex))
+                                    {
+                                        nb = true;
+                                    }
+                                    if (!nc && Vector3.Equals(vertices[c], vertex))
+                                    {
+                                        nc = true;
+                                    }
+                                    if (na && nb && nc) break;
+                                }
+                            }
+                            if (NeighborVerticesSouth != null && (!na || !nb || !nc))
+                            {
+                                foreach (Vector3 vertex in NeighborVerticesSouth)
+                                {
+                                    if (!na && Vector3.Equals(vertices[a], vertex))
+                                    {
+                                        na = true;
+                                    }
+                                    if (!nb && Vector3.Equals(vertices[b], vertex))
+                                    {
+                                        nb = true;
+                                    }
+                                    if (!nc && Vector3.Equals(vertices[c], vertex))
+                                    {
+                                        nc = true;
+                                    }
+                                    if (na && nb && nc) break;
+                                }
+                            }
+
+                            if (na && nb && nc) {
+                                Vector3 center = (vertices[a] + vertices[b] + vertices[c]) / 3;
+                                center.y = 1;
+                                Ray ray = new Ray(center, Vector3.down);
+                                RaycastHit hit;
+                                if (!Physics.Raycast(ray, out hit)) {
+                                    na = false;
+                                    nb = false;
+                                    nc = false;
+                                }
+                            }
+
+                            if (!na || !nb || !nc) addTriangle(a, b, c);
                         }
                     }
                 }
@@ -306,7 +398,9 @@ public class Chunk : MonoBehaviour
         mesh.RecalculateNormals();
         mesh.RecalculateTangents();
         mesh.RecalculateBounds();
-        meshFilter.sharedMesh = mesh;
+        meshFilter.mesh = mesh;
+        gameObject.AddComponent<MeshCollider>();
+
     }
 
     public Vector3[] GetEastVertices()
