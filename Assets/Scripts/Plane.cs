@@ -52,11 +52,11 @@ namespace Terrain
         void Update()
         {
             z++;
-            if (z >= 3) {
+            if (z >= 10) {
                 z = 0;
                 x++;
             }
-            if (x < 3) {
+            if (x < 10) {
                 AddChunk();
             }
         }

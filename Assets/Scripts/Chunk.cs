@@ -38,9 +38,10 @@ public class Chunk : MonoBehaviour
 
     public Vector3[] NeighborVerticesWest = null;
     public List<int> triangles;
-
+    private int startNeighbors;
     private Vector2 offset;
     private int vertexNeighborCutoff;
+
 
     public void Init(
         int seed,
@@ -69,21 +70,22 @@ public class Chunk : MonoBehaviour
             {
                 if (
                     Mathf
-                        .PerlinNoise(x + offset.x + seed * .517f,
-                        z + offset.y + seed * .517f) >
+                        .PerlinNoise(x + (offset.x * size) + seed * .517f,
+                        z + (offset.y * size) + seed * .517f) >
                     threshold
                 )
                 {
                     float offsetX =
                         Mathf
                             .Abs(Mathf
-                                .PerlinNoise(x + offset.x + seed * .1231f,
-                                z + offset.y + seed * .1231f));
+                                .PerlinNoise(x + (offset.x * size) + seed * .1231f,
+                                z + (offset.y * size) + seed * .1231f));
+
                     float offsetZ =
                         Mathf
                             .Abs(Mathf
-                                .PerlinNoise(x + offset.x + seed * .5134f,
-                                z + offset.y + seed * .5134f));
+                                .PerlinNoise(x + (offset.x * size) + seed * .5134f,
+                                z + (offset.y * size) + seed * .5134f));
 
                     float xVal = offsetX + x + (offset.x * size);
                     float zVal = offsetZ + z + (offset.y * size);
@@ -92,6 +94,8 @@ public class Chunk : MonoBehaviour
                 }
             }
         }
+
+        startNeighbors = vertices.Count;
 
         if (NeighborVerticesEast != null) foreach (Vector3 vertex in NeighborVerticesEast)
             {
@@ -124,28 +128,42 @@ public class Chunk : MonoBehaviour
         WestVertices = new List<int>();
         EastVertices = new List<int>();
         triangles = new List<int>();
+        List<int[]> suspectTriangles = new List<int[]>();
 
-        for (int a = 0; a < vertices.Count - 2; a++)
+        for (int a = 0; a < vertices.Count - 5; a++)
         {
-            for (int b = a + 1; b < vertices.Count - 1; b++)
+            for (int b = a + 1; b < vertices.Count - 4; b++)
             {
                 if (b == a) continue;
                 for (int c = b + 1; c < vertices.Count; c++)
                 {
                     if (c == a || c == b) continue;
-                    Vector2 circumcenter =
-                        getCircumcenter(vertices[a], vertices[b], vertices[c]);
-                    float radius =
-                        Vector2
-                            .Distance(circumcenter,
-                            new Vector2(vertices[a].x, vertices[a].z));
-                    if (radius == float.NaN) continue;
+                    Vector2 circumcenter = getCircumcenter(vertices[a], vertices[b], vertices[c]);
+                    // Debug.Log(circumcenter);
+                    float radius = Vector2.Distance(circumcenter, new Vector2(vertices[a].x, vertices[a].z));
+                    // if (radius == float.NaN) continue;
+
                     bool isBad = false;
-                    for (int i = 0; i < vertices.Count; i++)
+                    int stopPointScore = 0;
+                    if (a >= startNeighbors && a < vertices.Count - 4) stopPointScore++;
+                    if (b >= startNeighbors && b < vertices.Count - 4) stopPointScore++;
+                    if (c >= startNeighbors && c < vertices.Count - 4) stopPointScore++;
+
+                    int stopPoint = stopPointScore == 2 ? vertices.Count - 4 : vertices.Count;
+
+
+                    for (int i = 0; i < stopPoint; i++)
                     {
                         if (i == a || i == b || i == c) continue;
                         if (Vector2.Distance(circumcenter, new Vector2(vertices[i].x, vertices[i].z)) < radius)
                         {
+                            if (stopPointScore == 1 && c < vertices.Count - 4 && i > vertices.Count - 4)
+                            {
+                                Debug.DrawLine(vertices[a], vertices[b], Color.magenta, 5000);
+                                Debug.DrawLine(vertices[a], vertices[c], Color.magenta, 5000);
+                                Debug.DrawLine(vertices[c], vertices[b], Color.magenta, 5000);
+                                suspectTriangles.Add(new int[3] { a, b, c });
+                            }
                             isBad = true;
                             break;
                         }
@@ -319,23 +337,59 @@ public class Chunk : MonoBehaviour
                                 }
                             }
 
-                            if (na && nb && nc) {
+                            if (na && nb && nc)
+                            {
+
                                 Vector3 center = (vertices[a] + vertices[b] + vertices[c]) / 3;
                                 center.y = 1;
                                 Ray ray = new Ray(center, Vector3.down);
                                 RaycastHit hit;
-                                if (!Physics.Raycast(ray, out hit)) {
+                                if (!Physics.Raycast(ray, out hit))
+                                {
                                     na = false;
                                     nb = false;
                                     nc = false;
                                 }
                             }
 
-                            if (!na || !nb || !nc) addTriangle(a, b, c);
+                            if (!na || !nb || !nc) {
+                                
+                                    addTriangle(a, b, c);
+                                }
                         }
                     }
                 }
             }
+        }
+        List<int[]> addSuspects = new List<int[]>();
+        foreach (int[] tri in suspectTriangles)
+        {
+            List<List<int>> sharedSides = new List<List<int>>();
+            for (int i = 0; i < triangles.Count; i += 3)
+            {
+                int a = triangles[i];
+                int b = triangles[i + 1];
+                int c = triangles[i + 2];
+                List<int> sharedCorners = new List<int>();
+                if (a == tri[0] || a == tri[1] || a == tri[2]) sharedCorners.Add(a);
+                if (b == tri[0] || b == tri[1] || b == tri[2]) sharedCorners.Add(b);
+                if (c == tri[0] || c == tri[1] || c == tri[2]) sharedCorners.Add(c);
+                if (sharedCorners.Count == 2) sharedSides.Add(sharedCorners);
+                if (sharedSides.Count == 3)
+                {
+                    break;
+                }
+            }
+            if (sharedSides.Count == 3) {
+                if (
+                    (sharedSides[0][0] == sharedSides[1][0] || sharedSides[0][0] == sharedSides[1][1] || sharedSides[0][1] == sharedSides[1][0] || sharedSides[0][1] == sharedSides[1][1]) &&
+                    (sharedSides[0][0] == sharedSides[2][0] || sharedSides[0][0] == sharedSides[2][1] || sharedSides[0][1] == sharedSides[2][0] || sharedSides[0][1] == sharedSides[2][1]) &&
+                    (sharedSides[1][0] == sharedSides[2][0] || sharedSides[1][0] == sharedSides[2][1] || sharedSides[1][1] == sharedSides[2][0] || sharedSides[1][1] == sharedSides[2][1])
+                ) addSuspects.Add(tri);
+            }
+        }
+        foreach (int[] tri in addSuspects) {
+            addTriangle(tri[0], tri[1], tri[2]);
         }
 
         running = false;
@@ -445,6 +499,8 @@ public class Chunk : MonoBehaviour
 
     private Vector2 getCircumcenter(Vector3 a, Vector3 b, Vector3 c)
     {
+        // return getCircumcenter(new Vector2(a.x, a.z), new Vector2(b.x, b.z), new Vector2(c.x, c.z));
+
         float ax = a.x;
         float ay = a.z;
         float bx = b.x;
@@ -467,5 +523,62 @@ public class Chunk : MonoBehaviour
             ) /
             d;
         return new Vector2(ux, uy);
+    }
+
+    private void lineFromPoints(Vector2 P, Vector2 Q, out float a, out float b, out float c)
+    {
+        a = Q.y - P.y;
+        b = P.x - Q.x;
+        c = (a * P.x) + (b * P.y);
+    }
+
+    private float[] perpendicularBisectorFromLine(Vector2 P, Vector2 Q, float a, float b, float c)
+    {
+        Vector2 midPoint = new Vector2((P.x + Q.x) / 2, (P.y + Q.y) / 2);
+        c = (-b * midPoint.x) + (a * midPoint.y);
+        float temp = a;
+        a = -b;
+        b = temp;
+        return new float[3] { a, b, c };
+    }
+
+    private Vector2 lineLineIntersection(float a1, float b1, float c1, float a2, float b2, float c2)
+    {
+        float determinant = (a1 * b2) - (a2 * b1);
+        if (determinant == 0)
+        {
+            return new Vector2(float.MaxValue, float.MaxValue);
+        }
+        else
+        {
+            float x = ((b2 * c1) - (b1 * c2) / determinant);
+            float y = ((a1 * c2) - (a2 * c1) / determinant);
+            return new Vector2(x, y);
+        }
+    }
+
+    private Vector2 getCircumcenter(Vector2 P, Vector2 Q, Vector2 R)
+    {
+        float a;
+        float b;
+        float c;
+        lineFromPoints(P, Q, out a, out b, out c);
+        float e;
+        float f;
+        float g;
+        lineFromPoints(P, Q, out e, out f, out g);
+        float[] abc = perpendicularBisectorFromLine(P, Q, a, b, c);
+        a = abc[0];
+        b = abc[1];
+        c = abc[2];
+        float[] efg = perpendicularBisectorFromLine(P, Q, e, f, g);
+        e = efg[0];
+        f = efg[1];
+        g = efg[2];
+
+        Vector2 circumcenter = lineLineIntersection(a, b, c, e, f, g);
+        return circumcenter;
+
+
     }
 }
