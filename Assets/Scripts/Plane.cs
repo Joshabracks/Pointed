@@ -52,13 +52,19 @@ namespace Terrain
         void Update()
         {
             z++;
-            if (z >= 10) {
+            if (z >= 20) {
                 z = 0;
                 x++;
             }
-            if (x < 10) {
+            if (x < 20) {
                 AddChunk();
             }
+            // foreach(Chunk chunk in chunks)
+            // {
+            //     if (!chunk.finalCheck) {
+            //         chunk.FinalCheck();
+            //     }
+            // }
         }
     }
 }
