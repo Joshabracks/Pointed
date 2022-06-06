@@ -416,155 +416,170 @@ public class Chunk : MonoBehaviour
                 }
             }
         }
-        // if (suspectTriangles.Count > 0)
-        // {
-        //     for (int i = 0; i < neighborTriangles.Count; i += 3)
-        //     {
-        //         Debug.DrawLine(vertices[neighborTriangles[i]], vertices[neighborTriangles[i + 1]], Color.magenta, 5000);
-        //         Debug.DrawLine(vertices[neighborTriangles[i]], vertices[neighborTriangles[i + 2]], Color.magenta, 5000);
-        //         Debug.DrawLine(vertices[neighborTriangles[i + 2]], vertices[neighborTriangles[i + 1]], Color.magenta, 5000);
 
-        //     }
-        // }
-        // if (suspectTriangles.Count > 0)
-        // {
-
-        //     for (int i = 0; i < neighborTriangles.Count; i += 2)
-        //     {
-        //         Debug.DrawLine(vertices[neighborTriangles[i]], vertices[neighborTriangles[i + 1]], Color.magenta, 5000);
-        //     }
-        // }
+        // Add edge cases
+        List<int> suspectTriangles2 = new List<int>();
         for (int i = 0; i < suspectTriangles.Count; i += 3)
         {
-            List<int> a = new List<int>(); 
+            List<int> a = new List<int>();
             a.AddRange(new int[3] { suspectTriangles[i], suspectTriangles[i + 1], suspectTriangles[i + 2] });
             int sharedSides = 0;
-            for (int j = 0; j < triangles.Count; j += 3) {
-                int[] b = new int[3]{triangles[j], triangles[j + 1], triangles[j + 2] };
+            List<int> sharedTriangles = new List<int>();
+            // Determine if suspect triangle "a" is surrounded by 3 non-suspect triangles
+            for (int j = 0; j < triangles.Count; j += 3)
+            {
+                int[] b = new int[3] { triangles[j], triangles[j + 1], triangles[j + 2] };
                 int sharedPoints = 0;
                 if (a.Contains(b[0])) sharedPoints++;
                 if (a.Contains(b[1])) sharedPoints++;
                 if (a.Contains(b[2])) sharedPoints++;
-                if (sharedPoints == 2) sharedSides++;
+                if (sharedPoints == 2)
+                {
+                    sharedTriangles.AddRange(b);
+                    sharedSides++;
+                }
             }
-            // for (int j = 0; j < suspectTriangles.Count; j += 3) {
-            //     if (j == i) continue;
-            //     int[] b = new int[3]{suspectTriangles[j], suspectTriangles[j + 1], suspectTriangles[j + 2] };
-            //     int sharedPoints = 0;
-            //     if (a.Contains(b[0])) sharedPoints++;
-            //     if (a.Contains(b[1])) sharedPoints++;
-            //     if (a.Contains(b[2])) sharedPoints++;
-            //     if (sharedPoints == 2) sharedSides++;
-            // }
-            if (sharedSides == 3) {
-
-            Debug.DrawLine(vertices[a[0]], vertices[a[1]], Color.green, 5000);
-            Debug.DrawLine(vertices[a[0]], vertices[a[2]], Color.green, 5000);
-            Debug.DrawLine(vertices[a[2]], vertices[a[1]], Color.green, 5000);
-            addTriangle(a[0], a[1], a[2]);
+            if (sharedSides == 3) // "a" is surrounded by 3 triangles.  Add to triangles.
+            {
+                Debug.DrawLine(vertices[a[0]], vertices[a[1]], Color.cyan, 5000);
+                Debug.DrawLine(vertices[a[0]], vertices[a[2]], Color.cyan, 5000);
+                Debug.DrawLine(vertices[a[2]], vertices[a[1]], Color.cyan, 5000);
+                addTriangle(a[0], a[1], a[2]);
+                continue;
             }
-            // List<int[]> sharedTriangles = new List<int[]>();
-            // int sharedPoints = 0;
-            // for (int j = 0; j < neighborTriangles.Count; j += 3) {
-            //     sharedPoints = 0;
-            //     int[] b = new int[3] {neighborTriangles[j], neighborTriangles[j + 1], neighborTriangles[j + 2]};
-            //     if (b[0] == a[0] || b[0] == a[1] || b[0] == a[2]) sharedPoints++;
-            //     if (b[1] == a[0] || b[1] == a[1] || b[1] == a[2]) sharedPoints++;
-            //     if (b[2] == a[0] || b[2] == a[1] || b[2] == a[2]) sharedPoints++;
-            //     if (sharedPoints == 2) {
-            //         sharedTriangles.Add(b);
-            //         Debug.DrawLine(vertices[b[0]], vertices[b[1]], Color.magenta, 5000);
-            //         Debug.DrawLine(vertices[b[0]], vertices[b[2]], Color.magenta, 5000);
-            //         Debug.DrawLine(vertices[b[2]], vertices[b[1]], Color.magenta, 5000);
-            //     }
-            // }
-            // if (sharedTriangles.Count != 2) continue;
-            // for (int j = 0; j < neighborTriangles.Count; j++) {
-            //     int inside  = 0;
-            //     int[] b = new int[3] {neighborTriangles[j], neighborTriangles[j + 1], neighborTriangles[j + 2]};
 
-            //     Vector3 centerB = (vertices[b[0]] + vertices[b[1]] + vertices[b[2]]) / 3;
-            //     float radius = Vector2.Distance(new Vector2(vertices[b[0]].x, vertices[b[0]].z), centerB);
+            // Determine if suspect triangle borders at least 1 other suspect triangle, with a total of 3 bordering triangles
+            for (int j = 0; j < suspectTriangles.Count; j += 3)
+            {
+                if (j == i) continue;
+                int[] b = new int[3] { suspectTriangles[j], suspectTriangles[j + 1], suspectTriangles[j + 2] };
+                int sharedPoints = 0;
+                if (a.Contains(b[0])) sharedPoints++;
+                if (a.Contains(b[1])) sharedPoints++;
+                if (a.Contains(b[2])) sharedPoints++;
+                if (sharedPoints == 2)
+                {
+                    sharedTriangles.AddRange(b);
+                    sharedSides++;
+                }
+            }
+            if (sharedSides == 3) // triangle "a" borders at least 1 other suspect triangle for a total of 3 triangles bordered
+            {
+                suspectTriangles2.AddRange(a);
+                Debug.DrawLine(vertices[a[0]], vertices[a[1]], Color.magenta, 5000);
+                Debug.DrawLine(vertices[a[0]], vertices[a[2]], Color.magenta, 5000);
+                Debug.DrawLine(vertices[a[2]], vertices[a[1]], Color.magenta, 5000);
+                continue;
+            }
+            if (sharedSides == 2)
+            {
+                List<int> openSideCorners = new List<int>();
+                int[] b = new int[3] { sharedTriangles[0], sharedTriangles[1], sharedTriangles[2] };
+                int[] c = new int[3] { sharedTriangles[3], sharedTriangles[4], sharedTriangles[5] };
+                foreach (int corner in b)
+                {
+                    if ((corner != c[0] && corner != c[1] && corner != c[2]) && (corner == a[0] || corner == a[1] || corner == a[2]))
+                    {
+                        // if (!NorthVertices.Contains(corner) && !SouthVertices.Contains(corner) && !EastVertices.Contains(corner) && !WestVertices.Contains(corner))
+                        // {
+                        openSideCorners.Add(corner);
+                        break;
+                        // }
+                    }
+                }
+                if (openSideCorners.Count == 1)
+                {
+                    // Debug.Log("GO");
+                    foreach (int corner in c)
+                    {
+                        if ((corner != b[0] && corner != b[1] && corner != b[2]) && (corner == a[0] || corner == a[1] || corner == a[2]))
+                        {
+                            // if (!NorthVertices.Contains(corner) && !SouthVertices.Contains(corner) && !EastVertices.Contains(corner) && !WestVertices.Contains(corner))
+                            // {
+                            openSideCorners.Add(corner);
+                            break;
+                            // }
+                        }
+                    }
+                }
+                if (openSideCorners.Count == 2)
+                {
+                    int leftoverCorner = -1;
+                    if (a[0] != openSideCorners[0] && a[0] != openSideCorners[1]) leftoverCorner = a[0];
+                    else if (a[1] != openSideCorners[0] && a[1] != openSideCorners[1]) leftoverCorner = a[1];
+                    else if ((a[2] != openSideCorners[0] && a[2] != openSideCorners[1])) leftoverCorner = a[2];
+                    if (leftoverCorner != -1)
+                    {
+                        if (NorthVertices.Contains(leftoverCorner) || SouthVertices.Contains(leftoverCorner) || EastVertices.Contains(leftoverCorner) || SouthVertices.Contains(leftoverCorner))
+                        {
+                            Debug.DrawLine(vertices[a[0]], vertices[a[1]], Color.blue, 5000);
+                            Debug.DrawLine(vertices[a[0]], vertices[a[2]], Color.blue, 5000);
+                            Debug.DrawLine(vertices[a[2]], vertices[a[1]], Color.blue, 5000);
+                            int additionalCorner = -1;
+                            for (int j = 0; j < triangles.Count; j += 3)
+                            {
+                                int[] d = new int[3] { triangles[j], triangles[j + 1], triangles[j + 2] };
+                                int dCornerMatches = 0;
+                                if (openSideCorners[0] == d[0]) dCornerMatches++;
+                                if (openSideCorners[0] == d[1]) dCornerMatches++;
+                                if (openSideCorners[0] == d[2]) dCornerMatches++;
+                                if (dCornerMatches != 1) continue;
+                                for (int k = 0; k < triangles.Count; k += 3)
+                                {
+                                    if (k == j) continue;
+                                    int[] e = new int[3] { triangles[k], triangles[k + 1], triangles[k + 2] };
+                                    int eCornerMatches = 0;
+                                    if (openSideCorners[1] == e[0]) eCornerMatches++;
+                                    if (openSideCorners[1] == e[1]) eCornerMatches++;
+                                    if (openSideCorners[1] == e[2]) eCornerMatches++;
+                                    if (eCornerMatches != 1) continue;
+                                    foreach (int cornerE in e)
+                                    {
+                                        foreach (int cornerD in d)
+                                        {
+                                            if (cornerE == cornerD && cornerE != leftoverCorner) {
+                                                additionalCorner = cornerD;
+                                                break;
+                                            };
+                                        }
+                                        if (additionalCorner != -1) break;
+                                    }
+                                }
+                                if (additionalCorner != -1) break;
+                            }
+                            // if (leftoverCorner == additionalCorner) continue;
+                            if (additionalCorner != -1 && additionalCorner != leftoverCorner)
+                            {
+                                Debug.DrawLine(vertices[additionalCorner], vertices[openSideCorners[0]], Color.red, 5000);
+                                Debug.DrawLine(vertices[additionalCorner], vertices[openSideCorners[1]], Color.red, 5000);
+                                Debug.DrawLine(vertices[openSideCorners[1]], vertices[openSideCorners[0]], Color.red, 5000);
+                                addTriangle(additionalCorner, openSideCorners[0], openSideCorners[1]);
+                                addTriangle(leftoverCorner, openSideCorners[0], openSideCorners[1]);
+                                continue;
+                            }
+                        }
+                    }
+                }
+            }
 
-            //     foreach (int[] c in sharedTriangles) {
-            //         Vector3 centerC = ((vertices[c[0]]) + (vertices[c[1]]) + (vertices[c[2]])) / 3;
-            //         if (Vector3.Distance(centerB, centerC) < radius) {
-            //             inside++;
-            //         }
-            //     }
-            //     if (inside == 2) {
-            //         Debug.DrawLine(centerB, vertices[a[0]], Color.blue, 5000);
-            //         Debug.DrawLine(centerB, vertices[a[1]], Color.blue, 5000);
-            //         Debug.DrawLine(centerB, vertices[a[2]], Color.blue, 5000);
-
-            //         Debug.DrawLine(centerB, vertices[b[0]], Color.red, 5000);
-            //         Debug.DrawLine(centerB, vertices[b[1]], Color.red, 5000);
-            //         Debug.DrawLine(centerB, vertices[b[2]], Color.red, 5000);
-
-            //         addTriangle(a[0], a[1], a[2]);
-            //         break;
-            //     }
-            // }
         }
-
-        // foreach (int[] a in suspectTriangles)
-        //     int isNeighbor = 0;
-        //     if (NorthVertices.Contains(a[0]) || SouthVertices.Contains(a[0]) || EastVertices.Contains(a[0]) || WestVertices.Contains(a[0])) isNeighbor++;
-        //     if (NorthVertices.Contains(a[1]) || SouthVertices.Contains(a[1]) || EastVertices.Contains(a[1]) || WestVertices.Contains(a[1])) isNeighbor++;
-        //     if (NorthVertices.Contains(a[2]) || SouthVertices.Contains(a[2]) || EastVertices.Contains(a[2]) || WestVertices.Contains(a[2])) isNeighbor++;
-        //     Debug.Log(isNeighbor);
-        //     if (isNeighbor == 1)
-        //     {
-        //         addTriangle(a[0], a[1], a[2]);
-        //     }
-        // bool isBad = false;
-        // Vector3[][] aSides = new Vector3[3][]{
-        //     new Vector3[2]{vertices[a[0]], vertices[a[1]]},
-        //     new Vector3[2]{vertices[a[0]], vertices[a[2]]},
-        //     new Vector3[2]{vertices[a[2]], vertices[a[1]]}
-        // };
-
-        // for (int i = 0; i < triangles.Count; i += 3)
-        // {
-        //     int[] b = new int[3] { triangles[i], triangles[i + 1], triangles[i + 2] };
-        //     Vector3[][] bSides = new Vector3[3][]{
-        //         new Vector3[2]{vertices[b[0]], vertices[b[1]]},
-        //         new Vector3[2]{vertices[b[0]], vertices[b[2]]},
-        //         new Vector3[2]{vertices[b[2]], vertices[b[1]]}
-        //     };
-
-        //     foreach (Vector3[] sideA in aSides)
-        //     {
-        //         if (isBad) break;
-        //         foreach (Vector3[] sideB in bSides)
-        //         {
-        //             // if (LineLineIntersection(sideA[0], sideA[1], sideB[0], sideB[1]))
-        //             if (
-        //                 intersects(sideA[0].x, sideA[0].z, sideA[1].x, sideA[1].z, sideB[0].x, sideB[0].z, sideB[1].x, sideB[1].z)
-        //                 )
-        //             {
-        //                 isBad = true;
-        //                 break;
-        //             }
-        //         }
-        //     }
-        //     if (isBad) break;
-        // }
-
-        // if (!isBad)
-        // {
-        //     Debug.DrawLine(vertices[a[0]], vertices[a[1]], Color.green, 5000);
-        //     Debug.DrawLine(vertices[a[0]], vertices[a[2]], Color.green, 5000);
-        //     Debug.DrawLine(vertices[a[2]], vertices[a[1]], Color.green, 5000);
-        //     addTriangle(a[0], a[1], a[2]);
-        // }
-        // else
-        // {
-        //     Debug.DrawLine(vertices[a[0]], vertices[a[1]], Color.red, 5000);
-        //     Debug.DrawLine(vertices[a[0]], vertices[a[2]], Color.red, 5000);
-        //     Debug.DrawLine(vertices[a[2]], vertices[a[1]], Color.red, 5000);
-        // }
-        // }
+        // Determine if two suspectTriangles from suspectTriangles2 border each other
+        for (int i = 0; i < suspectTriangles2.Count; i += 3)
+        {
+            List<int> a = new List<int>();
+            a.AddRange(new int[3] { suspectTriangles2[i], suspectTriangles2[i + 1], suspectTriangles2[i + 2] });
+            for (int j = 0; j < suspectTriangles2.Count; j += 3)
+            {
+                if (j == i) continue;
+                int[] b = new int[3] { suspectTriangles2[j], suspectTriangles2[j + 1], suspectTriangles2[j + 2] };
+                int sharedPoints = 0;
+                if (a.Contains(b[0])) sharedPoints++;
+                if (a.Contains(b[1])) sharedPoints++;
+                if (a.Contains(b[2])) sharedPoints++;
+                if (sharedPoints == 2) addTriangle(a[0], a[1], a[2]); // triangle borders another triangle from suspectTriangles2
+                break;
+            }
+        }
     }
 
     private bool intersects(float a, float b, float c, float d, float p, float q, float r, float s)
