@@ -118,7 +118,7 @@ public class Chunk : MonoBehaviour
 
                     float xVal = offsetX + x + (offset.x * size);
                     float zVal = offsetZ + z + (offset.y * size);
-                    float height = Mathf.PerlinNoise((offsetX * density) + seed, (offsetZ * density) + seed);
+                    float height = Mathf.PerlinNoise((xVal * density) + seed, (zVal * density) + seed);
                     Vector3 vertex = new Vector3(xVal, height * heightMax, zVal);
                     vertices.Add(vertex);
                 }
@@ -162,6 +162,7 @@ public class Chunk : MonoBehaviour
         List<int> neighborTriangles = new List<int>();
 
         Vector3 chunkCenter = new Vector3((offset.x * size) + (size / 2), 0, (offset.y * size) + (size / 2));
+        chunkCenter.y = 0;
 
         // Iterate all viable triangle combinations
         // a and b ignore last 4 vertices
@@ -172,6 +173,10 @@ public class Chunk : MonoBehaviour
             {
                 for (int c = b + 1; c < vertices.Count; c++)
                 {
+                    Vector3 vA = new Vector3(vertices[a].x, 0, vertices[a].z);
+                    Vector3 vB = new Vector3(vertices[b].x, 0, vertices[b].z);
+                    Vector3 vC = new Vector3(vertices[c].x, 0, vertices[c].z);
+                    
                     // Get circumcenter and circumcircle radius
                     Vector2 circumcenter = getCircumcenter(vertices[a], vertices[b], vertices[c]);
                     float radius = Vector2.Distance(circumcenter, new Vector2(vertices[a].x, vertices[a].z));
@@ -187,6 +192,7 @@ public class Chunk : MonoBehaviour
                     bool isSuspect = false;
                     for (int i = 0; i < stopPoint; i++)
                     {
+                        Vector3 vI = new Vector3(vertices[i].x, 0, vertices[i].z);
                         if (i == a || i == b || i == c) continue;
                         if (Vector2.Distance(circumcenter, new Vector2(vertices[i].x, vertices[i].z)) < radius)
                         {
@@ -205,11 +211,11 @@ public class Chunk : MonoBehaviour
                                 if (maxAngle > maxDegrees)
                                 {
                                     Vector3 circumcenterV3 = new Vector3(circumcenter.x, 0, circumcenter.y);
-                                    float circumDist = Vector3.Distance(circumcenterV3, vertices[a]) + Vector3.Distance(circumcenterV3, vertices[b]) + Vector3.Distance(circumcenterV3, vertices[c]);
-                                    float iDist = Vector3.Distance(vertices[i], vertices[a]) + Vector3.Distance(vertices[i], vertices[b]) + Vector3.Distance(vertices[i], vertices[c]);
+                                    float circumDist = Vector3.Distance(circumcenterV3, vA) + Vector3.Distance(circumcenterV3, vB) + Vector3.Distance(circumcenterV3, vC);
+                                    float iDist = Vector3.Distance(vI, vA) + Vector3.Distance(vI, vB) + Vector3.Distance(vI, vC);
                                     if (circumDist < iDist)
                                     {
-                                        Vector3 triCenter = (vertices[a] + vertices[b] + vertices[c]) / 3;
+                                        Vector3 triCenter = (vA + vB + vC) / 3;
                                         if (Vector3.Distance(triCenter, chunkCenter) < Vector3.Distance(circumcenterV3, chunkCenter))
                                         {
                                             suspectTriangles.AddRange(new int[3] { a, b, c });
@@ -220,7 +226,7 @@ public class Chunk : MonoBehaviour
                             }
                             else if (stopPointScore == 3 && i > vertices.Count - 4)
                             {
-                                Vector3 center = (vertices[a] + vertices[b] + vertices[c]) / 3;
+                                Vector3 center = (vA + vB + vC) / 3;
                                 center.y = heightMax + 1;
                                 Ray ray = new Ray(center, Vector3.down);
                                 RaycastHit hit;
@@ -409,7 +415,7 @@ public class Chunk : MonoBehaviour
 
                         if (na && nb && nc)
                         {
-                            Vector3 center = (vertices[a] + vertices[b] + vertices[c]) / 3;
+                            Vector3 center = (vA + vB + vC) / 3;
                             center.y = heightMax + 1;
                             Ray ray = new Ray(center, Vector3.down);
                             RaycastHit hit;
