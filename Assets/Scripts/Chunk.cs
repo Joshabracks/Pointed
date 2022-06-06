@@ -62,6 +62,30 @@ public class Chunk : MonoBehaviour
         gameObject.name = $"{offset.x},{offset.y}";
     }
 
+    private void OnDrawGizmos()
+    {
+        if (Selection.activeGameObject != gameObject) return;
+        if (NeighborVerticesEast != null)
+        {
+            Gizmos.color = Color.green;
+            foreach (Vector3 v in NeighborVerticesEast) Gizmos.DrawSphere(v, 0.1f);
+        }
+        if (NeighborVerticesSouth != null)
+        {
+            Gizmos.color = Color.red;
+            foreach (Vector3 v in NeighborVerticesSouth) Gizmos.DrawSphere(v, 0.1f);
+        }
+        if (NeighborVerticesNorth != null)
+        {
+            Gizmos.color = Color.blue;
+            foreach (Vector3 v in NeighborVerticesNorth) Gizmos.DrawSphere(v, 0.1f);
+        }
+        if (NeighborVerticesWest != null)
+        {
+            Gizmos.color = Color.cyan;
+            foreach (Vector3 v in NeighborVerticesWest) Gizmos.DrawSphere(v, 0.1f);
+        }
+    }
     public void AddVertices()
     {
         vertices = new List<Vector3>();
@@ -184,33 +208,27 @@ public class Chunk : MonoBehaviour
                                         if (Vector3.Distance(triCenter, chunkCenter) < Vector3.Distance(circumcenterV3, chunkCenter))
                                         {
                                             suspectTriangles.AddRange(new int[3] { a, b, c });
-                                            Debug.DrawLine(vertices[a], vertices[b], Color.green, 5000);
-                                            Debug.DrawLine(vertices[a], vertices[c], Color.green, 5000);
-                                            Debug.DrawLine(vertices[c], vertices[b], Color.green, 5000);
-                                            // Debug.DrawLine(circumcenterV3, chunkCenter, Color.blue, 5000);
-                                            // Debug.DrawLine(triCenter, chunkCenter, Color.red, 5000);
-
-                                            // Debug.DrawLine(circumcenterV3, vertices[a], Color.cyan, 5000);
-                                            // Debug.DrawLine(circumcenterV3, vertices[b], Color.cyan, 5000);
-                                            // Debug.DrawLine(circumcenterV3, vertices[c], Color.cyan, 5000);
-
-                                            // Debug.DrawLine(vertices[i], vertices[a], Color.magenta, 5000);
-                                            // Debug.DrawLine(vertices[i], vertices[b], Color.magenta, 5000);
-                                            // Debug.DrawLine(vertices[i], vertices[c], Color.magenta, 5000);
-                                            // isSuspect = true;
-                                            // break;
                                         }
                                     }
                                 }
 
+                            }
+                            else if (stopPointScore == 3 && i > vertices.Count - 4)
+                            {
+                                Vector3 center = (vertices[a] + vertices[b] + vertices[c]) / 3;
+                                center.y = 1;
+                                Ray ray = new Ray(center, Vector3.down);
+                                RaycastHit hit;
+                                if (!Physics.Raycast(ray, out hit))
+                                {
+                                    break;
+                                }
                             }
                             isBad = true;
                             break;
                         }
                     }
                     if (isBad || isSuspect) continue;
-                    // if (!isBad && !isSuspect)
-                    // {
                     bool neighborAdded = false;
                     if (a >= vertices.Count - 4)
                     {
@@ -302,13 +320,6 @@ public class Chunk : MonoBehaviour
                             if (!NorthVertices.Contains(a) && a < vertices.Count - 4) NorthVertices.Add(a);
                         }
                     }
-                    // if (neighborAdded)
-                    // {
-                    //     neighborTriangles.AddRange(new int[] { a, b, c });
-                    //     // Debug.DrawLine(vertices[a], vertices[b], Color.magenta, 5000);
-                    //     // Debug.DrawLine(vertices[a], vertices[c], Color.magenta, 5000);
-                    //     // Debug.DrawLine(vertices[c], vertices[b], Color.magenta, 5000);
-                    // }
                     if (!neighborAdded)
                     {
                         bool na = false;
@@ -393,7 +404,6 @@ public class Chunk : MonoBehaviour
 
                         if (na && nb && nc)
                         {
-
                             Vector3 center = (vertices[a] + vertices[b] + vertices[c]) / 3;
                             center.y = 1;
                             Ray ray = new Ray(center, Vector3.down);
@@ -408,10 +418,8 @@ public class Chunk : MonoBehaviour
 
                         if (!na || !nb || !nc)
                         {
-
                             addTriangle(a, b, c);
                         }
-                        // }
                     }
                 }
             }
@@ -441,9 +449,6 @@ public class Chunk : MonoBehaviour
             }
             if (sharedSides == 3) // "a" is surrounded by 3 triangles.  Add to triangles.
             {
-                Debug.DrawLine(vertices[a[0]], vertices[a[1]], Color.cyan, 5000);
-                Debug.DrawLine(vertices[a[0]], vertices[a[2]], Color.cyan, 5000);
-                Debug.DrawLine(vertices[a[2]], vertices[a[1]], Color.cyan, 5000);
                 addTriangle(a[0], a[1], a[2]);
                 continue;
             }
@@ -466,9 +471,6 @@ public class Chunk : MonoBehaviour
             if (sharedSides == 3) // triangle "a" borders at least 1 other suspect triangle for a total of 3 triangles bordered
             {
                 suspectTriangles2.AddRange(a);
-                Debug.DrawLine(vertices[a[0]], vertices[a[1]], Color.magenta, 5000);
-                Debug.DrawLine(vertices[a[0]], vertices[a[2]], Color.magenta, 5000);
-                Debug.DrawLine(vertices[a[2]], vertices[a[1]], Color.magenta, 5000);
                 continue;
             }
             if (sharedSides == 2)
@@ -480,25 +482,18 @@ public class Chunk : MonoBehaviour
                 {
                     if ((corner != c[0] && corner != c[1] && corner != c[2]) && (corner == a[0] || corner == a[1] || corner == a[2]))
                     {
-                        // if (!NorthVertices.Contains(corner) && !SouthVertices.Contains(corner) && !EastVertices.Contains(corner) && !WestVertices.Contains(corner))
-                        // {
                         openSideCorners.Add(corner);
                         break;
-                        // }
                     }
                 }
                 if (openSideCorners.Count == 1)
                 {
-                    // Debug.Log("GO");
                     foreach (int corner in c)
                     {
                         if ((corner != b[0] && corner != b[1] && corner != b[2]) && (corner == a[0] || corner == a[1] || corner == a[2]))
                         {
-                            // if (!NorthVertices.Contains(corner) && !SouthVertices.Contains(corner) && !EastVertices.Contains(corner) && !WestVertices.Contains(corner))
-                            // {
                             openSideCorners.Add(corner);
                             break;
-                            // }
                         }
                     }
                 }
@@ -512,9 +507,6 @@ public class Chunk : MonoBehaviour
                     {
                         if (NorthVertices.Contains(leftoverCorner) || SouthVertices.Contains(leftoverCorner) || EastVertices.Contains(leftoverCorner) || SouthVertices.Contains(leftoverCorner))
                         {
-                            Debug.DrawLine(vertices[a[0]], vertices[a[1]], Color.blue, 5000);
-                            Debug.DrawLine(vertices[a[0]], vertices[a[2]], Color.blue, 5000);
-                            Debug.DrawLine(vertices[a[2]], vertices[a[1]], Color.blue, 5000);
                             int additionalCorner = -1;
                             for (int j = 0; j < triangles.Count; j += 3)
                             {
@@ -537,7 +529,8 @@ public class Chunk : MonoBehaviour
                                     {
                                         foreach (int cornerD in d)
                                         {
-                                            if (cornerE == cornerD && cornerE != leftoverCorner) {
+                                            if (cornerE == cornerD && cornerE != leftoverCorner)
+                                            {
                                                 additionalCorner = cornerD;
                                                 break;
                                             };
@@ -550,9 +543,6 @@ public class Chunk : MonoBehaviour
                             // if (leftoverCorner == additionalCorner) continue;
                             if (additionalCorner != -1 && additionalCorner != leftoverCorner)
                             {
-                                Debug.DrawLine(vertices[additionalCorner], vertices[openSideCorners[0]], Color.red, 5000);
-                                Debug.DrawLine(vertices[additionalCorner], vertices[openSideCorners[1]], Color.red, 5000);
-                                Debug.DrawLine(vertices[openSideCorners[1]], vertices[openSideCorners[0]], Color.red, 5000);
                                 addTriangle(additionalCorner, openSideCorners[0], openSideCorners[1]);
                                 addTriangle(leftoverCorner, openSideCorners[0], openSideCorners[1]);
                                 continue;
@@ -561,7 +551,6 @@ public class Chunk : MonoBehaviour
                     }
                 }
             }
-
         }
         // Determine if two suspectTriangles from suspectTriangles2 border each other
         for (int i = 0; i < suspectTriangles2.Count; i += 3)
@@ -642,146 +631,6 @@ public class Chunk : MonoBehaviour
         gameObject.AddComponent<MeshCollider>();
 
         running = false;
-    }
-
-    // void Update()
-    // {
-    //     if (!running && !finalCheck) FinalCheck();
-    // }
-
-    public void FinalCheck()
-    {
-        if (offset.x == 0 || offset.y == 0)
-        {
-            finalCheck = true;
-            return;
-        }
-        for (int x = 0; x < size * 4; x++)
-        {
-            for (int z = 0; z < size * 4; z++)
-            {
-                Ray ray = new Ray(new Vector3(((size * offset.x) + x) / 4, 1, ((size * offset.y) + z) / 4), Vector3.down);
-                RaycastHit hit;
-                if (!Physics.Raycast(ray, out hit))
-                {
-                    Vector3[] n = new Vector3[3];
-                    Vector3[] s = new Vector3[3];
-                    Vector3[] e = new Vector3[3];
-                    Vector3[] w = new Vector3[3];
-                    Vector3 origin = ray.origin;
-                    int maxTries = 40;
-                    int tries = 0;
-                    while (!Physics.Raycast(ray, out hit) || tries < maxTries)
-                    { //probe north
-                        ray = new Ray(new Vector3(ray.origin.x, 1, ray.origin.y + .1f), Vector3.down);
-                        tries++;
-                    }
-                    if (tries == maxTries) continue;
-                    Mesh mesh = hit.collider.gameObject.GetComponent<MeshFilter>().mesh;
-                    n[0] = mesh.vertices[hit.triangleIndex];
-                    n[1] = mesh.vertices[hit.triangleIndex + 1];
-                    n[2] = mesh.vertices[hit.triangleIndex + 2];
-
-                    tries = 0;
-                    ray = new Ray(origin, Vector3.down);
-
-                    while (!Physics.Raycast(ray, out hit) || tries < maxTries)
-                    { //probe south
-                        ray = new Ray(new Vector3(ray.origin.x, 1, ray.origin.y - .1f), Vector3.down);
-                        tries++;
-                    }
-                    if (tries == maxTries) continue;
-                    mesh = hit.collider.gameObject.GetComponent<MeshFilter>().mesh;
-                    s[0] = mesh.vertices[hit.triangleIndex];
-                    s[1] = mesh.vertices[hit.triangleIndex + 1];
-                    s[2] = mesh.vertices[hit.triangleIndex + 2];
-
-                    tries = 0;
-                    ray = new Ray(origin, Vector3.down);
-
-                    while (!Physics.Raycast(ray, out hit) || tries < maxTries)
-                    { //probe east
-                        ray = new Ray(new Vector3(ray.origin.x + .1f, 1, ray.origin.y), Vector3.down);
-                        tries++;
-                    }
-                    if (tries == maxTries) continue;
-                    mesh = hit.collider.gameObject.GetComponent<MeshFilter>().mesh;
-                    e[0] = mesh.vertices[hit.triangleIndex];
-                    e[1] = mesh.vertices[hit.triangleIndex + 1];
-                    e[2] = mesh.vertices[hit.triangleIndex + 2];
-
-                    tries = 0;
-                    ray = new Ray(origin, Vector3.down);
-
-                    while (!Physics.Raycast(ray, out hit) || tries < maxTries)
-                    { //probe west
-                        ray = new Ray(new Vector3(ray.origin.x, -.1f, ray.origin.y), Vector3.down);
-                        tries++;
-                    }
-                    if (tries == maxTries) continue;
-                    mesh = hit.collider.gameObject.GetComponent<MeshFilter>().mesh;
-                    w[0] = mesh.vertices[hit.triangleIndex];
-                    w[1] = mesh.vertices[hit.triangleIndex + 1];
-                    w[2] = mesh.vertices[hit.triangleIndex + 2];
-
-                    Vector3[] a = n;
-                    Vector3[] b = s;
-                    Vector3[] c = e;
-                    if (Vector3.Equals(a[0], b[0]) && Vector3.Equals(a[1], b[1]) && Vector3.Equals(a[2], b[2]))
-                    {
-                        b = w;
-                    }
-                    else if (Vector3.Equals(a[0], c[0]) && Vector3.Equals(a[1], c[1]) && Vector3.Equals(a[2], c[2]))
-                    {
-                        c = w;
-                    }
-                    else if (Vector3.Equals(b[0], c[0]) && Vector3.Equals(b[1], c[1]) && Vector3.Equals(b[2], c[2]))
-                    {
-                        c = w;
-                    }
-
-                    List<Vector3> newTri = new List<Vector3>();
-                    foreach (Vector3 point1 in a)
-                    {
-                        foreach (Vector3 point2 in c)
-                        {
-                            if (Vector3.Equals(point1, point2))
-                            {
-                                newTri.Add(point1);
-
-                                break;
-                            }
-                        }
-                        foreach (Vector3 point2 in b)
-                        {
-                            if (Vector3.Equals(point1, point2))
-                            {
-                                newTri.Add(point1);
-                                break;
-                            }
-                        }
-                    }
-                    foreach (Vector3 point1 in b)
-                    {
-                        foreach (Vector3 point2 in c)
-                        {
-                            if (Vector3.Equals(point1, point2))
-                            {
-                                newTri.Add(point1);
-                                break;
-                            }
-                        }
-                    }
-
-                    if (newTri.Count == 3)
-                    {
-                        vertices.AddRange(newTri);
-                        addTriangle(vertices.Count - 1, vertices.Count - 2, vertices.Count - 3);
-                    }
-                }
-            }
-        }
-        finalCheck = true;
     }
 
     public Vector3[] GetEastVertices()
