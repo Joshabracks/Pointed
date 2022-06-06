@@ -42,12 +42,15 @@ public class Chunk : MonoBehaviour
     private Vector2 offset;
     private int vertexNeighborCutoff;
     public bool finalCheck = false;
+    private float heightMax = 500;
+    public float density = 5f;
 
 
     public void Init(
         int seed,
         int size,
         float threshold,
+        float density,
         Vector2 offset,
         Material material
     )
@@ -55,6 +58,7 @@ public class Chunk : MonoBehaviour
         this.seed = seed;
         this.size = size;
         this.threshold = threshold;
+        this.density = density;
         this.material = material;
         this.offset = offset;
         vertices = new List<Vector3>();
@@ -114,7 +118,8 @@ public class Chunk : MonoBehaviour
 
                     float xVal = offsetX + x + (offset.x * size);
                     float zVal = offsetZ + z + (offset.y * size);
-                    Vector3 vertex = new Vector3(xVal, 0, zVal);
+                    float height = Mathf.PerlinNoise((offsetX * density) + seed, (offsetZ * density) + seed);
+                    Vector3 vertex = new Vector3(xVal, height * heightMax, zVal);
                     vertices.Add(vertex);
                 }
             }
@@ -216,7 +221,7 @@ public class Chunk : MonoBehaviour
                             else if (stopPointScore == 3 && i > vertices.Count - 4)
                             {
                                 Vector3 center = (vertices[a] + vertices[b] + vertices[c]) / 3;
-                                center.y = 1;
+                                center.y = heightMax + 1;
                                 Ray ray = new Ray(center, Vector3.down);
                                 RaycastHit hit;
                                 if (!Physics.Raycast(ray, out hit))
@@ -405,7 +410,7 @@ public class Chunk : MonoBehaviour
                         if (na && nb && nc)
                         {
                             Vector3 center = (vertices[a] + vertices[b] + vertices[c]) / 3;
-                            center.y = 1;
+                            center.y = heightMax + 1;
                             Ray ray = new Ray(center, Vector3.down);
                             RaycastHit hit;
                             if (!Physics.Raycast(ray, out hit))

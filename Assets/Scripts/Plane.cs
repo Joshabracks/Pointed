@@ -11,6 +11,7 @@ namespace Terrain
         public Material material;
         List<Chunk> chunks;
         public int chunkSize = 16;
+        public float density = 1;
         public int seed = 1337;
         // private Chunk template;
         public int x = 0;
@@ -42,7 +43,7 @@ namespace Terrain
             if (east != null) chunks[chunks.Count - 1].NeighborVerticesEast = east.GetComponent<Chunk>().GetEastVertices();
             if (west != null) chunks[chunks.Count - 1].NeighborVerticesWest = west.GetComponent<Chunk>().GetWestVertices();
 
-            chunks[chunks.Count - 1].Init(seed, chunkSize, .5f, new Vector2(x, z), material);
+            chunks[chunks.Count - 1].Init(seed, chunkSize, .5f, density, new Vector2(x, z), material);
             chunks[chunks.Count - 1].AddVertices();
             chunks[chunks.Count - 1].Triangulate();
             chunks[chunks.Count - 1].Render();
