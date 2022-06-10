@@ -328,6 +328,9 @@
     <Reference Include="Newtonsoft.Json">
         <HintPath>C:\Users\beetn\IDKPros\Pointed\Library\PackageCache\com.unity.nuget.newtonsoft-json@3.0.2\Runtime\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="DelaunatorSharp">
+        <HintPath>C:\Users\beetn\IDKPros\Pointed\Library\PackageCache\com.nol1fe.delaunator@738722b63e\Runtime\DelaunatorSharp.dll</HintPath>
+    </Reference>
     <Reference Include="unityplastic">
         <HintPath>C:\Users\beetn\IDKPros\Pointed\Library\PackageCache\com.unity.collab-proxy@1.15.16\Lib\Editor\PlasticSCM\unityplastic.dll</HintPath>
     </Reference>
@@ -1029,6 +1032,9 @@
     </Reference>
     <Reference Include="Unity.Services.Core.Environments">
         <HintPath>C:\Users\beetn\IDKPros\Pointed\Library\ScriptAssemblies\Unity.Services.Core.Environments.dll</HintPath>
+    </Reference>
+    <Reference Include="DelaunatorSharp.Runtime">
+        <HintPath>C:\Users\beetn\IDKPros\Pointed\Library\ScriptAssemblies\DelaunatorSharp.Runtime.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Timeline.Editor">
         <HintPath>C:\Users\beetn\IDKPros\Pointed\Library\ScriptAssemblies\Unity.Timeline.Editor.dll</HintPath>

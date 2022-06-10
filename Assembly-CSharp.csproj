@@ -39,6 +39,7 @@
      <Compile Include="Assets\Scripts\Plane.cs" />
      <Compile Include="Assets\Scripts\Chunk.cs" />
      <Compile Include="Assets\TutorialInfo\Scripts\Readme.cs" />
+     <Compile Include="Assets\Scripts\FastNoiseLite.cs" />
     <Reference Include="UnityEngine">
         <HintPath>C:\Program Files\Unity\Hub\Editor\2021.3.2f1\Editor\Data\Managed\UnityEngine\UnityEngine.dll</HintPath>
     </Reference>
@@ -302,6 +303,9 @@
     </Reference>
     <Reference Include="Newtonsoft.Json">
         <HintPath>C:\Users\beetn\IDKPros\Pointed\Library\PackageCache\com.unity.nuget.newtonsoft-json@3.0.2\Runtime\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="DelaunatorSharp">
+        <HintPath>C:\Users\beetn\IDKPros\Pointed\Library\PackageCache\com.nol1fe.delaunator@738722b63e\Runtime\DelaunatorSharp.dll</HintPath>
     </Reference>
     <Reference Include="netstandard">
         <HintPath>C:\Program Files\Unity\Hub\Editor\2021.3.2f1\Editor\Data\NetStandard\ref\2.1.0\netstandard.dll</HintPath>
@@ -758,6 +762,9 @@
     </Reference>
     <Reference Include="Unity.Services.Core.Environments">
         <HintPath>C:\Users\beetn\IDKPros\Pointed\Library\ScriptAssemblies\Unity.Services.Core.Environments.dll</HintPath>
+    </Reference>
+    <Reference Include="DelaunatorSharp.Runtime">
+        <HintPath>C:\Users\beetn\IDKPros\Pointed\Library\ScriptAssemblies\DelaunatorSharp.Runtime.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Timeline.Editor">
         <HintPath>C:\Users\beetn\IDKPros\Pointed\Library\ScriptAssemblies\Unity.Timeline.Editor.dll</HintPath>

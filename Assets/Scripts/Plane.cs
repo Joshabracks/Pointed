@@ -33,15 +33,15 @@ namespace Terrain
             GameObject obj = new GameObject();
             chunks.Add(obj.AddComponent<Chunk>());
 
-            GameObject north = GameObject.Find($"{x},{z + 1}");
-            GameObject south = GameObject.Find($"{x},{z - 1}");
-            GameObject east = GameObject.Find($"{x + 1},{z}");
-            GameObject west = GameObject.Find($"{x - 1},{z}");
+            // GameObject north = GameObject.Find($"{x},{z + 1}");
+            // GameObject south = GameObject.Find($"{x},{z - 1}");
+            // GameObject east = GameObject.Find($"{x + 1},{z}");
+            // GameObject west = GameObject.Find($"{x - 1},{z}");
 
-            if (north != null) chunks[chunks.Count - 1].NeighborVerticesNorth = north.GetComponent<Chunk>().GetNorthVertices();
-            if (south != null) chunks[chunks.Count - 1].NeighborVerticesSouth = south.GetComponent<Chunk>().GetSouthVertices();
-            if (east != null) chunks[chunks.Count - 1].NeighborVerticesEast = east.GetComponent<Chunk>().GetEastVertices();
-            if (west != null) chunks[chunks.Count - 1].NeighborVerticesWest = west.GetComponent<Chunk>().GetWestVertices();
+            // if (north != null) chunks[chunks.Count - 1].NeighborVerticesNorth = north.GetComponent<Chunk>().GetNorthVertices();
+            // if (south != null) chunks[chunks.Count - 1].NeighborVerticesSouth = south.GetComponent<Chunk>().GetSouthVertices();
+            // if (east != null) chunks[chunks.Count - 1].NeighborVerticesEast = east.GetComponent<Chunk>().GetEastVertices();
+            // if (west != null) chunks[chunks.Count - 1].NeighborVerticesWest = west.GetComponent<Chunk>().GetWestVertices();
 
             chunks[chunks.Count - 1].Init(seed, chunkSize, .5f, density, new Vector2(x, z), material);
             chunks[chunks.Count - 1].AddVertices();
@@ -53,11 +53,11 @@ namespace Terrain
         void Update()
         {
             z++;
-            if (z >= 20) {
+            if (z >= 3) {
                 z = 0;
                 x++;
             }
-            if (x < 20) {
+            if (x < 3) {
                 AddChunk();
             }
             // foreach(Chunk chunk in chunks)

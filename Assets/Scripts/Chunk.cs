@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using FastNoise;
+using DelaunatorSharp;
 
 public class Chunk : MonoBehaviour
 {
@@ -42,9 +44,19 @@ public class Chunk : MonoBehaviour
     private Vector2 offset;
     private int vertexNeighborCutoff;
     public bool finalCheck = false;
-    private float heightMax = 500;
+    private float heightMax = 50;
     public float density = 5f;
-
+    List<int> sideIndices;
+    class Point : IPoint
+    {
+        public double X { get; set; }
+        public double Y { get; set; }
+        public Point(Vector3 vertex)
+        {
+            X = (double)vertex.x;
+            Y = (double)vertex.z;
+        }
+    }
 
     public void Init(
         int seed,
@@ -92,10 +104,36 @@ public class Chunk : MonoBehaviour
     }
     public void AddVertices()
     {
+        FastNoiseLite heightNoise = new FastNoiseLite();
+        heightNoise.SetNoiseType(FastNoiseLite.NoiseType.Cellular);
+        heightNoise.SetSeed(seed);
+        heightNoise.SetFrequency(density);
+        heightNoise.SetFractalType(FastNoiseLite.FractalType.PingPong);
+        heightNoise.SetFractalOctaves(5);
+        heightNoise.SetFractalGain(.5f);
+        heightNoise.SetFractalLacunarity(2.5f);
+        heightNoise.SetFractalPingPongStrength(3);
+        heightNoise.SetCellularDistanceFunction(FastNoiseLite.CellularDistanceFunction.EuclideanSq);
+        heightNoise.SetCellularReturnType(FastNoiseLite.CellularReturnType.CellValue);
+        heightNoise.SetCellularJitter(2.25f);
+
+
+        FastNoiseLite biomeWarp = new FastNoiseLite();
+        biomeWarp.SetDomainWarpType(FastNoiseLite.DomainWarpType.BasicGrid);
+        biomeWarp.SetDomainWarpAmp(20);
+        biomeWarp.SetFrequency(density);
+        biomeWarp.SetFractalType(FastNoiseLite.FractalType.DomainWarpProgressive);
+        biomeWarp.SetFractalLacunarity(0.50f);
+        biomeWarp.SetFractalGain(0.75f);
+
         vertices = new List<Vector3>();
-        for (int x = 0; x < size; x++)
+        sideIndices = new List<int>();
+
+
+
+        for (int x = 0; x < size + 1; x++)
         {
-            for (int z = 0; z < size; z++)
+            for (int z = 0; z < size + 1; z++)
             {
                 if (
                     Mathf
@@ -118,468 +156,534 @@ public class Chunk : MonoBehaviour
 
                     float xVal = offsetX + x + (offset.x * size);
                     float zVal = offsetZ + z + (offset.y * size);
-                    float height = Mathf.PerlinNoise((xVal * density) + seed, (zVal * density) + seed);
+                    // float expansionRatio = Mathf.PerlinNoise((xVal * density) + seed, (zVal * density) + seed) * 3;
+                    // height = (height + Mathf.PerlinNoise((xVal * (density / 2)) + seed, (zVal * (density / 2)) + seed));
+                    // height = (height + Mathf.PerlinNoise((xVal * (density / 4)) + seed, (zVal * (density / 4)) + seed));
+                    // height = (height + Mathf.PerlinNoise((xVal * (density / 8)) + seed, (zVal * (density / 8)) + seed));
+                    // height = height / 4;
+                    float height = heightNoise.GetNoise(xVal, zVal) * biomeWarp.GetNoise(xVal, zVal);
+
                     Vector3 vertex = new Vector3(xVal, height * heightMax, zVal);
+                    if (x == 0 || z == 0 || x == size || z == size)
+                    {
+                        sideIndices.Add(vertices.Count);
+                    }
                     vertices.Add(vertex);
                 }
             }
         }
 
-        startNeighbors = vertices.Count;
 
-        if (NeighborVerticesEast != null) foreach (Vector3 vertex in NeighborVerticesEast)
-            {
-                if (!vertices.Contains(vertex)) vertices.Add(vertex);
-            }
-        if (NeighborVerticesWest != null) foreach (Vector3 vertex in NeighborVerticesWest)
-            {
-                if (!vertices.Contains(vertex)) vertices.Add(vertex);
-            }
-        if (NeighborVerticesNorth != null) foreach (Vector3 vertex in NeighborVerticesNorth)
-            {
-                if (!vertices.Contains(vertex)) vertices.Add(vertex);
-            }
-        if (NeighborVerticesSouth != null) foreach (Vector3 vertex in NeighborVerticesSouth)
-            {
-                if (!vertices.Contains(vertex)) vertices.Add(vertex);
-            }
-        float borderOffset = size / 2;
-        vertices.Add(new Vector3((size / 2) + (offset.x * size), 0, (size + borderOffset) + (offset.y * size))); // North vertex
-        vertices.Add(new Vector3((-borderOffset) + (offset.x * size), 0, (size / 2) + (offset.y * size))); // West vertex
-        vertices.Add(new Vector3((size + borderOffset) + (offset.x * size), 0, (size / 2) + (offset.y * size))); // East vertex
-        vertices.Add(new Vector3((size / 2) + (offset.x * size), 0, (-borderOffset) + (offset.y * size))); // South vertex
+        // startNeighbors = vertices.Count;
+
+        // if (NeighborVerticesEast != null) foreach (Vector3 vertex in NeighborVerticesEast)
+        //     {
+        //         if (!vertices.Contains(vertex)) vertices.Add(vertex);
+        //     }
+        // if (NeighborVerticesWest != null) foreach (Vector3 vertex in NeighborVerticesWest)
+        //     {
+        //         if (!vertices.Contains(vertex)) vertices.Add(vertex);
+        //     }
+        // if (NeighborVerticesNorth != null) foreach (Vector3 vertex in NeighborVerticesNorth)
+        //     {
+        //         if (!vertices.Contains(vertex)) vertices.Add(vertex);
+        //     }
+        // if (NeighborVerticesSouth != null) foreach (Vector3 vertex in NeighborVerticesSouth)
+        //     {
+        //         if (!vertices.Contains(vertex)) vertices.Add(vertex);
+        // }
+        // float borderOffset = size / 2;
+        // vertices.Add(new Vector3((size / 2) + (offset.x * size), 0, (size + borderOffset) + (offset.y * size))); // North vertex
+        // vertices.Add(new Vector3((-borderOffset) + (offset.x * size), 0, (size / 2) + (offset.y * size))); // West vertex
+        // vertices.Add(new Vector3((size + borderOffset) + (offset.x * size), 0, (size / 2) + (offset.y * size))); // East vertex
+        // vertices.Add(new Vector3((size / 2) + (offset.x * size), 0, (-borderOffset) + (offset.y * size))); // South vertex
     }
+
 
     public void Triangulate() // implimentation of delaunay triangulation
     {
+        Point[] points = new Point[vertices.Count];
+        for (int i = 0; i < vertices.Count; i++)
+        {
+            points[i] = new Point(vertices[i]);
+        }
+        Delaunator delaunator = new Delaunator(points);
+        // delaunator.PointsOfTriangle()
+        IEnumerable<ITriangle> tris = delaunator.GetTriangles();
+
+        // int bottomRight = 0;
+        // int bottomLeft = 0;
+        // int topRight = 0;
+        // int topLeft = 0;
+
+        // float bottomRightDistance = float.MaxValue;
+        // float bottomLeftDistance = float.MaxValue;
+        // float topRightDistance = float.MaxValue;
+        // float topLeftDistance = float.MaxValue;
+        foreach (ITriangle tri in tris)
+        {
+            IEnumerable<int> indices = delaunator.PointsOfTriangle(tri.Index);
+
+            int edgeVertexCount = 0;
+
+            foreach (int index in indices)
+            {
+                // int z = index == 0 ? 0 : ((size + 2) % index);
+                // int x = index - z == 0 ? 0 : (index - z) / (size + 2);
+                // Vector2 vert = new Vector2(vertices[index].x, vertices[index].z);
+                // if (Vector2.Distance(vert, new Vector2((size * offset.x) + size, (size * offset.y))) < bottomRightDistance) bottomRight = index;
+                // if (Vector2.Distance(vert, new Vector2((size * offset.x), (size * offset.y))) < bottomLeftDistance) bottomLeft = index;
+                // if (Vector2.Distance(vert, new Vector2((size * offset.x) + size, (size * offset.y) + size)) < topRightDistance) topRight = index;
+                // if (Vector2.Distance(vert, new Vector2((size * offset.x), (size * offset.y) + size)) < topLeftDistance) topLeft = index;
+
+                if (sideIndices.Contains(index)) edgeVertexCount++;
+            }
+
+            // Debug.Log(edgeVertexCount);
+            if (edgeVertexCount != 3)
+            {
+                triangles.AddRange(indices);
+            }
+        }
+
+        // vertices[bottomRight] = new Vector3((size * offset.x) + size, vertices[bottomRight].y, (size * offset.y));
+        // vertices[bottomLeft] = new Vector3((size * offset.x), vertices[bottomLeft].y, (size * offset.y));
+        // vertices[topRight] = new Vector3((size * offset.x) + size, vertices[topRight].y, (size * offset.y) + size);
+        // vertices[topLeft] = new Vector3((size * offset.x), vertices[topLeft].y, (size * offset.y) + size);
+
+
+
+
+
+
         // reserve vertex lists for neighboring chunk use
-        NorthVertices = new List<int>();
-        SouthVertices = new List<int>();
-        WestVertices = new List<int>();
-        EastVertices = new List<int>();
-        triangles = new List<int>();
-        List<int> suspectTriangles = new List<int>();
-        List<int> neighborTriangles = new List<int>();
+        // NorthVertices = new List<int>();
+        // SouthVertices = new List<int>();
+        // WestVertices = new List<int>();
+        // EastVertices = new List<int>();
+        // triangles = new List<int>();
+        // List<int> suspectTriangles = new List<int>();
+        // List<int> neighborTriangles = new List<int>();
 
-        Vector3 chunkCenter = new Vector3((offset.x * size) + (size / 2), 0, (offset.y * size) + (size / 2));
-        chunkCenter.y = 0;
+        // Vector3 chunkCenter = new Vector3((offset.x * size) + (size / 2), 0, (offset.y * size) + (size / 2));
+        // chunkCenter.y = 0;
 
-        // Iterate all viable triangle combinations
-        // a and b ignore last 4 vertices
-        // a/b/c never overlap
-        for (int a = 0; a < vertices.Count - 5; a++)
-        {
-            for (int b = a + 1; b < vertices.Count - 4; b++)
-            {
-                for (int c = b + 1; c < vertices.Count; c++)
-                {
-                    Vector3 vA = new Vector3(vertices[a].x, 0, vertices[a].z);
-                    Vector3 vB = new Vector3(vertices[b].x, 0, vertices[b].z);
-                    Vector3 vC = new Vector3(vertices[c].x, 0, vertices[c].z);
-                    
-                    // Get circumcenter and circumcircle radius
-                    Vector2 circumcenter = getCircumcenter(vertices[a], vertices[b], vertices[c]);
-                    float radius = Vector2.Distance(circumcenter, new Vector2(vertices[a].x, vertices[a].z));
+        // // Iterate all viable triangle combinations
+        // // a and b ignore last 4 vertices
+        // // a/b/c never overlap
+        // for (int a = 0; a < vertices.Count - 5; a++)
+        // {
+        //     for (int b = a + 1; b < vertices.Count - 4; b++)
+        //     {
+        //         for (int c = b + 1; c < vertices.Count; c++)
+        //         {
+        //             Vector3 vA = new Vector3(vertices[a].x, 0, vertices[a].z);
+        //             Vector3 vB = new Vector3(vertices[b].x, 0, vertices[b].z);
+        //             Vector3 vC = new Vector3(vertices[c].x, 0, vertices[c].z);
 
-                    // Determine if triangle is build with "outer" vertices
-                    int stopPointScore = 0;
-                    if (a >= startNeighbors && a < vertices.Count - 4) stopPointScore++;
-                    if (b >= startNeighbors && b < vertices.Count - 4) stopPointScore++;
-                    if (c >= startNeighbors && c < vertices.Count - 4) stopPointScore++;
-                    int stopPoint = stopPointScore == 2 ? vertices.Count - 4 : vertices.Count;
+        //             // Get circumcenter and circumcircle radius
+        //             Vector2 circumcenter = getCircumcenter(vertices[a], vertices[b], vertices[c]);
+        //             float radius = Vector2.Distance(circumcenter, new Vector2(vertices[a].x, vertices[a].z));
 
-                    bool isBad = false;
-                    bool isSuspect = false;
-                    for (int i = 0; i < stopPoint; i++)
-                    {
-                        Vector3 vI = new Vector3(vertices[i].x, 0, vertices[i].z);
-                        if (i == a || i == b || i == c) continue;
-                        if (Vector2.Distance(circumcenter, new Vector2(vertices[i].x, vertices[i].z)) < radius)
-                        {
-                            if (stopPointScore == 1 && c < vertices.Count - 4 && i > vertices.Count - 4)
-                            {
-                                Vector2 A = new Vector2(vertices[a].x, vertices[a].z);
-                                Vector2 B = new Vector2(vertices[b].x, vertices[b].z);
-                                Vector2 C = new Vector2(vertices[c].x, vertices[c].z);
+        //             // Determine if triangle is build with "outer" vertices
+        //             int stopPointScore = 0;
+        //             if (a >= startNeighbors && a < vertices.Count - 4) stopPointScore++;
+        //             if (b >= startNeighbors && b < vertices.Count - 4) stopPointScore++;
+        //             if (c >= startNeighbors && c < vertices.Count - 4) stopPointScore++;
+        //             int stopPoint = stopPointScore == 2 ? vertices.Count - 4 : vertices.Count;
 
-                                float[] angles = findAngles(A, B, C);
-                                float maxDegrees = 90;
-                                float maxAngle = angles[0];
-                                if (angles[1] > maxAngle) maxAngle = angles[1];
-                                if (angles[2] > maxAngle) maxAngle = angles[2];
+        //             bool isBad = false;
+        //             bool isSuspect = false;
+        //             for (int i = 0; i < stopPoint; i++)
+        //             {
+        //                 Vector3 vI = new Vector3(vertices[i].x, 0, vertices[i].z);
+        //                 if (i == a || i == b || i == c) continue;
+        //                 if (Vector2.Distance(circumcenter, new Vector2(vertices[i].x, vertices[i].z)) < radius)
+        //                 {
+        //                     if (stopPointScore == 1 && c < vertices.Count - 4 && i > vertices.Count - 4)
+        //                     {
+        //                         Vector2 A = new Vector2(vertices[a].x, vertices[a].z);
+        //                         Vector2 B = new Vector2(vertices[b].x, vertices[b].z);
+        //                         Vector2 C = new Vector2(vertices[c].x, vertices[c].z);
 
-                                if (maxAngle > maxDegrees)
-                                {
-                                    Vector3 circumcenterV3 = new Vector3(circumcenter.x, 0, circumcenter.y);
-                                    float circumDist = Vector3.Distance(circumcenterV3, vA) + Vector3.Distance(circumcenterV3, vB) + Vector3.Distance(circumcenterV3, vC);
-                                    float iDist = Vector3.Distance(vI, vA) + Vector3.Distance(vI, vB) + Vector3.Distance(vI, vC);
-                                    if (circumDist < iDist)
-                                    {
-                                        Vector3 triCenter = (vA + vB + vC) / 3;
-                                        if (Vector3.Distance(triCenter, chunkCenter) < Vector3.Distance(circumcenterV3, chunkCenter))
-                                        {
-                                            suspectTriangles.AddRange(new int[3] { a, b, c });
-                                        }
-                                    }
-                                }
+        //                         float[] angles = findAngles(A, B, C);
+        //                         float maxDegrees = 90;
+        //                         float maxAngle = angles[0];
+        //                         if (angles[1] > maxAngle) maxAngle = angles[1];
+        //                         if (angles[2] > maxAngle) maxAngle = angles[2];
 
-                            }
-                            else if (stopPointScore == 3 && i > vertices.Count - 4)
-                            {
-                                Vector3 center = (vA + vB + vC) / 3;
-                                center.y = heightMax + 1;
-                                Ray ray = new Ray(center, Vector3.down);
-                                RaycastHit hit;
-                                if (!Physics.Raycast(ray, out hit))
-                                {
-                                    break;
-                                }
-                            }
-                            isBad = true;
-                            break;
-                        }
-                    }
-                    if (isBad || isSuspect) continue;
-                    bool neighborAdded = false;
-                    if (a >= vertices.Count - 4)
-                    {
-                        neighborAdded = true;
-                        neighborTriangles.Add(b);
-                        neighborTriangles.Add(c);
-                        if (a == vertices.Count - 4)
-                        {
-                            // South vertex
-                            if (!SouthVertices.Contains(b) && b < vertices.Count - 4) SouthVertices.Add(b);
-                            if (!SouthVertices.Contains(c) && c < vertices.Count - 4) SouthVertices.Add(c);
-                        }
-                        else if (a == vertices.Count - 3)
-                        {
-                            // East vertex
-                            if (!EastVertices.Contains(b) && b < vertices.Count - 4) EastVertices.Add(b);
-                            if (!EastVertices.Contains(c) && c < vertices.Count - 4) EastVertices.Add(c);
-                        }
-                        else if (a == vertices.Count - 2)
-                        {
-                            // West vertex
-                            if (!WestVertices.Contains(b) && b < vertices.Count - 4) WestVertices.Add(b);
-                            if (!WestVertices.Contains(c) && c < vertices.Count - 4) WestVertices.Add(c);
-                        }
-                        else
-                        {
-                            // North vertex
-                            if (!NorthVertices.Contains(b) && b < vertices.Count - 4) NorthVertices.Add(b);
-                            if (!NorthVertices.Contains(c) && c < vertices.Count - 4) NorthVertices.Add(c);
-                        }
-                    }
-                    if (b >= vertices.Count - 4)
-                    {
-                        neighborAdded = true;
-                        neighborTriangles.Add(c);
-                        neighborTriangles.Add(a);
-                        if (b == vertices.Count - 4)
-                        {
-                            // South vertex
-                            if (!SouthVertices.Contains(a) && a < vertices.Count - 4) SouthVertices.Add(a);
-                            if (!SouthVertices.Contains(c) && c < vertices.Count - 4) SouthVertices.Add(c);
-                        }
-                        else if (b == vertices.Count - 3)
-                        {
-                            // East vertex
-                            if (!EastVertices.Contains(a) && a < vertices.Count - 4) EastVertices.Add(a);
-                            if (!EastVertices.Contains(c) && c < vertices.Count - 4) EastVertices.Add(c);
-                        }
-                        else if (b == vertices.Count - 2)
-                        {
-                            // West vertex
-                            if (!WestVertices.Contains(a) && a < vertices.Count - 4) WestVertices.Add(a);
-                            if (!WestVertices.Contains(c) && c < vertices.Count - 4) WestVertices.Add(c);
-                        }
-                        else
-                        {
-                            // North vertex
-                            if (!NorthVertices.Contains(a) && a < vertices.Count - 4) NorthVertices.Add(a);
-                            if (!NorthVertices.Contains(c) && c < vertices.Count - 4) NorthVertices.Add(c);
-                        }
-                    }
-                    if (c >= vertices.Count - 4)
-                    {
-                        neighborAdded = true;
-                        neighborTriangles.Add(b);
-                        neighborTriangles.Add(a);
-                        if (c == vertices.Count - 4)
-                        {
-                            // South vertex
-                            if (!SouthVertices.Contains(b) && b < vertices.Count - 4) SouthVertices.Add(b);
-                            if (!SouthVertices.Contains(a) && a < vertices.Count - 4) SouthVertices.Add(a);
-                        }
-                        else if (c == vertices.Count - 3)
-                        {
-                            // East vertex
-                            if (!EastVertices.Contains(b) && b < vertices.Count - 4) EastVertices.Add(b);
-                            if (!EastVertices.Contains(a) && a < vertices.Count - 4) EastVertices.Add(a);
-                        }
-                        else if (c == vertices.Count - 2)
-                        {
-                            // West vertex
-                            if (!WestVertices.Contains(b) && b < vertices.Count - 4) WestVertices.Add(b);
-                            if (!WestVertices.Contains(a) && a < vertices.Count - 4) WestVertices.Add(a);
-                        }
-                        else
-                        {
-                            // North vertex
-                            if (!NorthVertices.Contains(b) && b < vertices.Count - 4) NorthVertices.Add(b);
-                            if (!NorthVertices.Contains(a) && a < vertices.Count - 4) NorthVertices.Add(a);
-                        }
-                    }
-                    if (!neighborAdded)
-                    {
-                        bool na = false;
-                        bool nb = false;
-                        bool nc = false;
-                        if (NeighborVerticesEast != null)
-                        {
-                            foreach (Vector3 vertex in NeighborVerticesEast)
-                            {
-                                if (!na && Vector3.Equals(vertices[a], vertex))
-                                {
-                                    na = true;
-                                }
-                                if (!nb && Vector3.Equals(vertices[b], vertex))
-                                {
-                                    nb = true;
-                                }
-                                if (!nc && Vector3.Equals(vertices[c], vertex))
-                                {
-                                    nc = true;
-                                }
-                                if (na && nb && nc) break;
-                            }
-                        }
-                        if (NeighborVerticesWest != null && (!na || !nb || !nc))
-                        {
-                            foreach (Vector3 vertex in NeighborVerticesWest)
-                            {
-                                if (!na && Vector3.Equals(vertices[a], vertex))
-                                {
-                                    na = true;
-                                }
-                                if (!nb && Vector3.Equals(vertices[b], vertex))
-                                {
-                                    nb = true;
-                                }
-                                if (!nc && Vector3.Equals(vertices[c], vertex))
-                                {
-                                    nc = true;
-                                }
-                                if (na && nb && nc) break;
-                            }
-                        }
-                        if (NeighborVerticesNorth != null && (!na || !nb || !nc))
-                        {
-                            foreach (Vector3 vertex in NeighborVerticesNorth)
-                            {
-                                if (!na && Vector3.Equals(vertices[a], vertex))
-                                {
-                                    na = true;
-                                }
-                                if (!nb && Vector3.Equals(vertices[b], vertex))
-                                {
-                                    nb = true;
-                                }
-                                if (!nc && Vector3.Equals(vertices[c], vertex))
-                                {
-                                    nc = true;
-                                }
-                                if (na && nb && nc) break;
-                            }
-                        }
-                        if (NeighborVerticesSouth != null && (!na || !nb || !nc))
-                        {
-                            foreach (Vector3 vertex in NeighborVerticesSouth)
-                            {
-                                if (!na && Vector3.Equals(vertices[a], vertex))
-                                {
-                                    na = true;
-                                }
-                                if (!nb && Vector3.Equals(vertices[b], vertex))
-                                {
-                                    nb = true;
-                                }
-                                if (!nc && Vector3.Equals(vertices[c], vertex))
-                                {
-                                    nc = true;
-                                }
-                                if (na && nb && nc) break;
-                            }
-                        }
+        //                         if (maxAngle > maxDegrees)
+        //                         {
+        //                             Vector3 circumcenterV3 = new Vector3(circumcenter.x, 0, circumcenter.y);
+        //                             float circumDist = Vector3.Distance(circumcenterV3, vA) + Vector3.Distance(circumcenterV3, vB) + Vector3.Distance(circumcenterV3, vC);
+        //                             float iDist = Vector3.Distance(vI, vA) + Vector3.Distance(vI, vB) + Vector3.Distance(vI, vC);
+        //                             if (circumDist < iDist)
+        //                             {
+        //                                 Vector3 triCenter = (vA + vB + vC) / 3;
+        //                                 if (Vector3.Distance(triCenter, chunkCenter) < Vector3.Distance(circumcenterV3, chunkCenter))
+        //                                 {
+        //                                     suspectTriangles.AddRange(new int[3] { a, b, c });
+        //                                 }
+        //                             }
+        //                         }
 
-                        if (na && nb && nc)
-                        {
-                            Vector3 center = (vA + vB + vC) / 3;
-                            center.y = heightMax + 1;
-                            Ray ray = new Ray(center, Vector3.down);
-                            RaycastHit hit;
-                            if (!Physics.Raycast(ray, out hit))
-                            {
-                                na = false;
-                                nb = false;
-                                nc = false;
-                            }
-                        }
+        //                     }
+        //                     else if (stopPointScore == 3 && i > vertices.Count - 4)
+        //                     {
+        //                         Vector3 center = (vA + vB + vC) / 3;
+        //                         center.y = heightMax + 1;
+        //                         Ray ray = new Ray(center, Vector3.down);
+        //                         RaycastHit hit;
+        //                         if (!Physics.Raycast(ray, out hit))
+        //                         {
+        //                             break;
+        //                         }
+        //                     }
+        //                     isBad = true;
+        //                     break;
+        //                 }
+        //             }
+        //             if (isBad || isSuspect) continue;
+        //             bool neighborAdded = false;
+        //             if (a >= vertices.Count - 4)
+        //             {
+        //                 neighborAdded = true;
+        //                 neighborTriangles.Add(b);
+        //                 neighborTriangles.Add(c);
+        //                 if (a == vertices.Count - 4)
+        //                 {
+        //                     // South vertex
+        //                     if (!SouthVertices.Contains(b) && b < vertices.Count - 4) SouthVertices.Add(b);
+        //                     if (!SouthVertices.Contains(c) && c < vertices.Count - 4) SouthVertices.Add(c);
+        //                 }
+        //                 else if (a == vertices.Count - 3)
+        //                 {
+        //                     // East vertex
+        //                     if (!EastVertices.Contains(b) && b < vertices.Count - 4) EastVertices.Add(b);
+        //                     if (!EastVertices.Contains(c) && c < vertices.Count - 4) EastVertices.Add(c);
+        //                 }
+        //                 else if (a == vertices.Count - 2)
+        //                 {
+        //                     // West vertex
+        //                     if (!WestVertices.Contains(b) && b < vertices.Count - 4) WestVertices.Add(b);
+        //                     if (!WestVertices.Contains(c) && c < vertices.Count - 4) WestVertices.Add(c);
+        //                 }
+        //                 else
+        //                 {
+        //                     // North vertex
+        //                     if (!NorthVertices.Contains(b) && b < vertices.Count - 4) NorthVertices.Add(b);
+        //                     if (!NorthVertices.Contains(c) && c < vertices.Count - 4) NorthVertices.Add(c);
+        //                 }
+        //             }
+        //             if (b >= vertices.Count - 4)
+        //             {
+        //                 neighborAdded = true;
+        //                 neighborTriangles.Add(c);
+        //                 neighborTriangles.Add(a);
+        //                 if (b == vertices.Count - 4)
+        //                 {
+        //                     // South vertex
+        //                     if (!SouthVertices.Contains(a) && a < vertices.Count - 4) SouthVertices.Add(a);
+        //                     if (!SouthVertices.Contains(c) && c < vertices.Count - 4) SouthVertices.Add(c);
+        //                 }
+        //                 else if (b == vertices.Count - 3)
+        //                 {
+        //                     // East vertex
+        //                     if (!EastVertices.Contains(a) && a < vertices.Count - 4) EastVertices.Add(a);
+        //                     if (!EastVertices.Contains(c) && c < vertices.Count - 4) EastVertices.Add(c);
+        //                 }
+        //                 else if (b == vertices.Count - 2)
+        //                 {
+        //                     // West vertex
+        //                     if (!WestVertices.Contains(a) && a < vertices.Count - 4) WestVertices.Add(a);
+        //                     if (!WestVertices.Contains(c) && c < vertices.Count - 4) WestVertices.Add(c);
+        //                 }
+        //                 else
+        //                 {
+        //                     // North vertex
+        //                     if (!NorthVertices.Contains(a) && a < vertices.Count - 4) NorthVertices.Add(a);
+        //                     if (!NorthVertices.Contains(c) && c < vertices.Count - 4) NorthVertices.Add(c);
+        //                 }
+        //             }
+        //             if (c >= vertices.Count - 4)
+        //             {
+        //                 neighborAdded = true;
+        //                 neighborTriangles.Add(b);
+        //                 neighborTriangles.Add(a);
+        //                 if (c == vertices.Count - 4)
+        //                 {
+        //                     // South vertex
+        //                     if (!SouthVertices.Contains(b) && b < vertices.Count - 4) SouthVertices.Add(b);
+        //                     if (!SouthVertices.Contains(a) && a < vertices.Count - 4) SouthVertices.Add(a);
+        //                 }
+        //                 else if (c == vertices.Count - 3)
+        //                 {
+        //                     // East vertex
+        //                     if (!EastVertices.Contains(b) && b < vertices.Count - 4) EastVertices.Add(b);
+        //                     if (!EastVertices.Contains(a) && a < vertices.Count - 4) EastVertices.Add(a);
+        //                 }
+        //                 else if (c == vertices.Count - 2)
+        //                 {
+        //                     // West vertex
+        //                     if (!WestVertices.Contains(b) && b < vertices.Count - 4) WestVertices.Add(b);
+        //                     if (!WestVertices.Contains(a) && a < vertices.Count - 4) WestVertices.Add(a);
+        //                 }
+        //                 else
+        //                 {
+        //                     // North vertex
+        //                     if (!NorthVertices.Contains(b) && b < vertices.Count - 4) NorthVertices.Add(b);
+        //                     if (!NorthVertices.Contains(a) && a < vertices.Count - 4) NorthVertices.Add(a);
+        //                 }
+        //             }
+        //             if (!neighborAdded)
+        //             {
+        //                 bool na = false;
+        //                 bool nb = false;
+        //                 bool nc = false;
+        //                 if (NeighborVerticesEast != null)
+        //                 {
+        //                     foreach (Vector3 vertex in NeighborVerticesEast)
+        //                     {
+        //                         if (!na && Vector3.Equals(vertices[a], vertex))
+        //                         {
+        //                             na = true;
+        //                         }
+        //                         if (!nb && Vector3.Equals(vertices[b], vertex))
+        //                         {
+        //                             nb = true;
+        //                         }
+        //                         if (!nc && Vector3.Equals(vertices[c], vertex))
+        //                         {
+        //                             nc = true;
+        //                         }
+        //                         if (na && nb && nc) break;
+        //                     }
+        //                 }
+        //                 if (NeighborVerticesWest != null && (!na || !nb || !nc))
+        //                 {
+        //                     foreach (Vector3 vertex in NeighborVerticesWest)
+        //                     {
+        //                         if (!na && Vector3.Equals(vertices[a], vertex))
+        //                         {
+        //                             na = true;
+        //                         }
+        //                         if (!nb && Vector3.Equals(vertices[b], vertex))
+        //                         {
+        //                             nb = true;
+        //                         }
+        //                         if (!nc && Vector3.Equals(vertices[c], vertex))
+        //                         {
+        //                             nc = true;
+        //                         }
+        //                         if (na && nb && nc) break;
+        //                     }
+        //                 }
+        //                 if (NeighborVerticesNorth != null && (!na || !nb || !nc))
+        //                 {
+        //                     foreach (Vector3 vertex in NeighborVerticesNorth)
+        //                     {
+        //                         if (!na && Vector3.Equals(vertices[a], vertex))
+        //                         {
+        //                             na = true;
+        //                         }
+        //                         if (!nb && Vector3.Equals(vertices[b], vertex))
+        //                         {
+        //                             nb = true;
+        //                         }
+        //                         if (!nc && Vector3.Equals(vertices[c], vertex))
+        //                         {
+        //                             nc = true;
+        //                         }
+        //                         if (na && nb && nc) break;
+        //                     }
+        //                 }
+        //                 if (NeighborVerticesSouth != null && (!na || !nb || !nc))
+        //                 {
+        //                     foreach (Vector3 vertex in NeighborVerticesSouth)
+        //                     {
+        //                         if (!na && Vector3.Equals(vertices[a], vertex))
+        //                         {
+        //                             na = true;
+        //                         }
+        //                         if (!nb && Vector3.Equals(vertices[b], vertex))
+        //                         {
+        //                             nb = true;
+        //                         }
+        //                         if (!nc && Vector3.Equals(vertices[c], vertex))
+        //                         {
+        //                             nc = true;
+        //                         }
+        //                         if (na && nb && nc) break;
+        //                     }
+        //                 }
 
-                        if (!na || !nb || !nc)
-                        {
-                            addTriangle(a, b, c);
-                        }
-                    }
-                }
-            }
-        }
+        //                 if (na && nb && nc)
+        //                 {
+        //                     Vector3 center = (vA + vB + vC) / 3;
+        //                     center.y = heightMax + 1;
+        //                     Ray ray = new Ray(center, Vector3.down);
+        //                     RaycastHit hit;
+        //                     if (!Physics.Raycast(ray, out hit))
+        //                     {
+        //                         na = false;
+        //                         nb = false;
+        //                         nc = false;
+        //                     }
+        //                 }
 
-        // Add edge cases
-        List<int> suspectTriangles2 = new List<int>();
-        for (int i = 0; i < suspectTriangles.Count; i += 3)
-        {
-            List<int> a = new List<int>();
-            a.AddRange(new int[3] { suspectTriangles[i], suspectTriangles[i + 1], suspectTriangles[i + 2] });
-            int sharedSides = 0;
-            List<int> sharedTriangles = new List<int>();
-            // Determine if suspect triangle "a" is surrounded by 3 non-suspect triangles
-            for (int j = 0; j < triangles.Count; j += 3)
-            {
-                int[] b = new int[3] { triangles[j], triangles[j + 1], triangles[j + 2] };
-                int sharedPoints = 0;
-                if (a.Contains(b[0])) sharedPoints++;
-                if (a.Contains(b[1])) sharedPoints++;
-                if (a.Contains(b[2])) sharedPoints++;
-                if (sharedPoints == 2)
-                {
-                    sharedTriangles.AddRange(b);
-                    sharedSides++;
-                }
-            }
-            if (sharedSides == 3) // "a" is surrounded by 3 triangles.  Add to triangles.
-            {
-                addTriangle(a[0], a[1], a[2]);
-                continue;
-            }
+        //                 if (!na || !nb || !nc)
+        //                 {
+        //                     addTriangle(a, b, c);
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
 
-            // Determine if suspect triangle borders at least 1 other suspect triangle, with a total of 3 bordering triangles
-            for (int j = 0; j < suspectTriangles.Count; j += 3)
-            {
-                if (j == i) continue;
-                int[] b = new int[3] { suspectTriangles[j], suspectTriangles[j + 1], suspectTriangles[j + 2] };
-                int sharedPoints = 0;
-                if (a.Contains(b[0])) sharedPoints++;
-                if (a.Contains(b[1])) sharedPoints++;
-                if (a.Contains(b[2])) sharedPoints++;
-                if (sharedPoints == 2)
-                {
-                    sharedTriangles.AddRange(b);
-                    sharedSides++;
-                }
-            }
-            if (sharedSides == 3) // triangle "a" borders at least 1 other suspect triangle for a total of 3 triangles bordered
-            {
-                suspectTriangles2.AddRange(a);
-                continue;
-            }
-            if (sharedSides == 2)
-            {
-                List<int> openSideCorners = new List<int>();
-                int[] b = new int[3] { sharedTriangles[0], sharedTriangles[1], sharedTriangles[2] };
-                int[] c = new int[3] { sharedTriangles[3], sharedTriangles[4], sharedTriangles[5] };
-                foreach (int corner in b)
-                {
-                    if ((corner != c[0] && corner != c[1] && corner != c[2]) && (corner == a[0] || corner == a[1] || corner == a[2]))
-                    {
-                        openSideCorners.Add(corner);
-                        break;
-                    }
-                }
-                if (openSideCorners.Count == 1)
-                {
-                    foreach (int corner in c)
-                    {
-                        if ((corner != b[0] && corner != b[1] && corner != b[2]) && (corner == a[0] || corner == a[1] || corner == a[2]))
-                        {
-                            openSideCorners.Add(corner);
-                            break;
-                        }
-                    }
-                }
-                if (openSideCorners.Count == 2)
-                {
-                    int leftoverCorner = -1;
-                    if (a[0] != openSideCorners[0] && a[0] != openSideCorners[1]) leftoverCorner = a[0];
-                    else if (a[1] != openSideCorners[0] && a[1] != openSideCorners[1]) leftoverCorner = a[1];
-                    else if ((a[2] != openSideCorners[0] && a[2] != openSideCorners[1])) leftoverCorner = a[2];
-                    if (leftoverCorner != -1)
-                    {
-                        if (NorthVertices.Contains(leftoverCorner) || SouthVertices.Contains(leftoverCorner) || EastVertices.Contains(leftoverCorner) || SouthVertices.Contains(leftoverCorner))
-                        {
-                            int additionalCorner = -1;
-                            for (int j = 0; j < triangles.Count; j += 3)
-                            {
-                                int[] d = new int[3] { triangles[j], triangles[j + 1], triangles[j + 2] };
-                                int dCornerMatches = 0;
-                                if (openSideCorners[0] == d[0]) dCornerMatches++;
-                                if (openSideCorners[0] == d[1]) dCornerMatches++;
-                                if (openSideCorners[0] == d[2]) dCornerMatches++;
-                                if (dCornerMatches != 1) continue;
-                                for (int k = 0; k < triangles.Count; k += 3)
-                                {
-                                    if (k == j) continue;
-                                    int[] e = new int[3] { triangles[k], triangles[k + 1], triangles[k + 2] };
-                                    int eCornerMatches = 0;
-                                    if (openSideCorners[1] == e[0]) eCornerMatches++;
-                                    if (openSideCorners[1] == e[1]) eCornerMatches++;
-                                    if (openSideCorners[1] == e[2]) eCornerMatches++;
-                                    if (eCornerMatches != 1) continue;
-                                    foreach (int cornerE in e)
-                                    {
-                                        foreach (int cornerD in d)
-                                        {
-                                            if (cornerE == cornerD && cornerE != leftoverCorner)
-                                            {
-                                                additionalCorner = cornerD;
-                                                break;
-                                            };
-                                        }
-                                        if (additionalCorner != -1) break;
-                                    }
-                                }
-                                if (additionalCorner != -1) break;
-                            }
-                            // if (leftoverCorner == additionalCorner) continue;
-                            if (additionalCorner != -1 && additionalCorner != leftoverCorner)
-                            {
-                                addTriangle(additionalCorner, openSideCorners[0], openSideCorners[1]);
-                                addTriangle(leftoverCorner, openSideCorners[0], openSideCorners[1]);
-                                continue;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        // Determine if two suspectTriangles from suspectTriangles2 border each other
-        for (int i = 0; i < suspectTriangles2.Count; i += 3)
-        {
-            List<int> a = new List<int>();
-            a.AddRange(new int[3] { suspectTriangles2[i], suspectTriangles2[i + 1], suspectTriangles2[i + 2] });
-            for (int j = 0; j < suspectTriangles2.Count; j += 3)
-            {
-                if (j == i) continue;
-                int[] b = new int[3] { suspectTriangles2[j], suspectTriangles2[j + 1], suspectTriangles2[j + 2] };
-                int sharedPoints = 0;
-                if (a.Contains(b[0])) sharedPoints++;
-                if (a.Contains(b[1])) sharedPoints++;
-                if (a.Contains(b[2])) sharedPoints++;
-                if (sharedPoints == 2) addTriangle(a[0], a[1], a[2]); // triangle borders another triangle from suspectTriangles2
-                break;
-            }
-        }
+        // // Add edge cases
+        // List<int> suspectTriangles2 = new List<int>();
+        // for (int i = 0; i < suspectTriangles.Count; i += 3)
+        // {
+        //     List<int> a = new List<int>();
+        //     a.AddRange(new int[3] { suspectTriangles[i], suspectTriangles[i + 1], suspectTriangles[i + 2] });
+        //     int sharedSides = 0;
+        //     List<int> sharedTriangles = new List<int>();
+        //     // Determine if suspect triangle "a" is surrounded by 3 non-suspect triangles
+        //     for (int j = 0; j < triangles.Count; j += 3)
+        //     {
+        //         int[] b = new int[3] { triangles[j], triangles[j + 1], triangles[j + 2] };
+        //         int sharedPoints = 0;
+        //         if (a.Contains(b[0])) sharedPoints++;
+        //         if (a.Contains(b[1])) sharedPoints++;
+        //         if (a.Contains(b[2])) sharedPoints++;
+        //         if (sharedPoints == 2)
+        //         {
+        //             sharedTriangles.AddRange(b);
+        //             sharedSides++;
+        //         }
+        //     }
+        //     if (sharedSides == 3) // "a" is surrounded by 3 triangles.  Add to triangles.
+        //     {
+        //         addTriangle(a[0], a[1], a[2]);
+        //         continue;
+        //     }
+
+        //     // Determine if suspect triangle borders at least 1 other suspect triangle, with a total of 3 bordering triangles
+        //     for (int j = 0; j < suspectTriangles.Count; j += 3)
+        //     {
+        //         if (j == i) continue;
+        //         int[] b = new int[3] { suspectTriangles[j], suspectTriangles[j + 1], suspectTriangles[j + 2] };
+        //         int sharedPoints = 0;
+        //         if (a.Contains(b[0])) sharedPoints++;
+        //         if (a.Contains(b[1])) sharedPoints++;
+        //         if (a.Contains(b[2])) sharedPoints++;
+        //         if (sharedPoints == 2)
+        //         {
+        //             sharedTriangles.AddRange(b);
+        //             sharedSides++;
+        //         }
+        //     }
+        //     if (sharedSides == 3) // triangle "a" borders at least 1 other suspect triangle for a total of 3 triangles bordered
+        //     {
+        //         suspectTriangles2.AddRange(a);
+        //         continue;
+        //     }
+        //     if (sharedSides == 2)
+        //     {
+        //         List<int> openSideCorners = new List<int>();
+        //         int[] b = new int[3] { sharedTriangles[0], sharedTriangles[1], sharedTriangles[2] };
+        //         int[] c = new int[3] { sharedTriangles[3], sharedTriangles[4], sharedTriangles[5] };
+        //         foreach (int corner in b)
+        //         {
+        //             if ((corner != c[0] && corner != c[1] && corner != c[2]) && (corner == a[0] || corner == a[1] || corner == a[2]))
+        //             {
+        //                 openSideCorners.Add(corner);
+        //                 break;
+        //             }
+        //         }
+        //         if (openSideCorners.Count == 1)
+        //         {
+        //             foreach (int corner in c)
+        //             {
+        //                 if ((corner != b[0] && corner != b[1] && corner != b[2]) && (corner == a[0] || corner == a[1] || corner == a[2]))
+        //                 {
+        //                     openSideCorners.Add(corner);
+        //                     break;
+        //                 }
+        //             }
+        //         }
+        //         if (openSideCorners.Count == 2)
+        //         {
+        //             int leftoverCorner = -1;
+        //             if (a[0] != openSideCorners[0] && a[0] != openSideCorners[1]) leftoverCorner = a[0];
+        //             else if (a[1] != openSideCorners[0] && a[1] != openSideCorners[1]) leftoverCorner = a[1];
+        //             else if ((a[2] != openSideCorners[0] && a[2] != openSideCorners[1])) leftoverCorner = a[2];
+        //             if (leftoverCorner != -1)
+        //             {
+        //                 if (NorthVertices.Contains(leftoverCorner) || SouthVertices.Contains(leftoverCorner) || EastVertices.Contains(leftoverCorner) || SouthVertices.Contains(leftoverCorner))
+        //                 {
+        //                     int additionalCorner = -1;
+        //                     for (int j = 0; j < triangles.Count; j += 3)
+        //                     {
+        //                         int[] d = new int[3] { triangles[j], triangles[j + 1], triangles[j + 2] };
+        //                         int dCornerMatches = 0;
+        //                         if (openSideCorners[0] == d[0]) dCornerMatches++;
+        //                         if (openSideCorners[0] == d[1]) dCornerMatches++;
+        //                         if (openSideCorners[0] == d[2]) dCornerMatches++;
+        //                         if (dCornerMatches != 1) continue;
+        //                         for (int k = 0; k < triangles.Count; k += 3)
+        //                         {
+        //                             if (k == j) continue;
+        //                             int[] e = new int[3] { triangles[k], triangles[k + 1], triangles[k + 2] };
+        //                             int eCornerMatches = 0;
+        //                             if (openSideCorners[1] == e[0]) eCornerMatches++;
+        //                             if (openSideCorners[1] == e[1]) eCornerMatches++;
+        //                             if (openSideCorners[1] == e[2]) eCornerMatches++;
+        //                             if (eCornerMatches != 1) continue;
+        //                             foreach (int cornerE in e)
+        //                             {
+        //                                 foreach (int cornerD in d)
+        //                                 {
+        //                                     if (cornerE == cornerD && cornerE != leftoverCorner)
+        //                                     {
+        //                                         additionalCorner = cornerD;
+        //                                         break;
+        //                                     };
+        //                                 }
+        //                                 if (additionalCorner != -1) break;
+        //                             }
+        //                         }
+        //                         if (additionalCorner != -1) break;
+        //                     }
+        //                     // if (leftoverCorner == additionalCorner) continue;
+        //                     if (additionalCorner != -1 && additionalCorner != leftoverCorner)
+        //                     {
+        //                         addTriangle(additionalCorner, openSideCorners[0], openSideCorners[1]);
+        //                         addTriangle(leftoverCorner, openSideCorners[0], openSideCorners[1]);
+        //                         continue;
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+        // // Determine if two suspectTriangles from suspectTriangles2 border each other
+        // for (int i = 0; i < suspectTriangles2.Count; i += 3)
+        // {
+        //     List<int> a = new List<int>();
+        //     a.AddRange(new int[3] { suspectTriangles2[i], suspectTriangles2[i + 1], suspectTriangles2[i + 2] });
+        //     for (int j = 0; j < suspectTriangles2.Count; j += 3)
+        //     {
+        //         if (j == i) continue;
+        //         int[] b = new int[3] { suspectTriangles2[j], suspectTriangles2[j + 1], suspectTriangles2[j + 2] };
+        //         int sharedPoints = 0;
+        //         if (a.Contains(b[0])) sharedPoints++;
+        //         if (a.Contains(b[1])) sharedPoints++;
+        //         if (a.Contains(b[2])) sharedPoints++;
+        //         if (sharedPoints == 2) addTriangle(a[0], a[1], a[2]); // triangle borders another triangle from suspectTriangles2
+        //         break;
+        //     }
+        // }
     }
 
     private bool intersects(float a, float b, float c, float d, float p, float q, float r, float s)
