@@ -386,7 +386,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   material: {fileID: 2100000, guid: a6d01d364eaa3c74caa9b0c4df30ce63, type: 2}
-  chunkSize: 8
+  chunkSize: 256
   density: 0.00075
   seed: 101
   x: 0

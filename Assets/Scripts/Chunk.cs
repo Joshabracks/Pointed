@@ -211,15 +211,20 @@ public class Chunk : MonoBehaviour
         // delaunator.PointsOfTriangle()
         IEnumerable<ITriangle> tris = delaunator.GetTriangles();
 
-        // int bottomRight = 0;
-        // int bottomLeft = 0;
-        // int topRight = 0;
-        // int topLeft = 0;
+        int bottomRight = 0;
+        int bottomLeft = 0;
+        int topRight = 0;
+        int topLeft = 0;
 
-        // float bottomRightDistance = float.MaxValue;
-        // float bottomLeftDistance = float.MaxValue;
-        // float topRightDistance = float.MaxValue;
-        // float topLeftDistance = float.MaxValue;
+        float bottomRightDistance = float.MaxValue;
+        float bottomLeftDistance = float.MaxValue;
+        float topRightDistance = float.MaxValue;
+        float topLeftDistance = float.MaxValue;
+
+        Vector2 bottomRightCoord = new Vector2((size * offset.x) + size, size * offset.y);
+        Vector2 bottomLeftCoord = new Vector2(size * offset.x, size * offset.y);
+        Vector2 topRightCoord = new Vector2((size * offset.x) + size, (size * offset.y) + size);
+        Vector2 topLeftCoord = new Vector2(size * offset.x, (size * offset.y) + size);
         foreach (ITriangle tri in tris)
         {
             IEnumerable<int> indices = delaunator.PointsOfTriangle(tri.Index);
@@ -230,11 +235,6 @@ public class Chunk : MonoBehaviour
             {
                 // int z = index == 0 ? 0 : ((size + 2) % index);
                 // int x = index - z == 0 ? 0 : (index - z) / (size + 2);
-                // Vector2 vert = new Vector2(vertices[index].x, vertices[index].z);
-                // if (Vector2.Distance(vert, new Vector2((size * offset.x) + size, (size * offset.y))) < bottomRightDistance) bottomRight = index;
-                // if (Vector2.Distance(vert, new Vector2((size * offset.x), (size * offset.y))) < bottomLeftDistance) bottomLeft = index;
-                // if (Vector2.Distance(vert, new Vector2((size * offset.x) + size, (size * offset.y) + size)) < topRightDistance) topRight = index;
-                // if (Vector2.Distance(vert, new Vector2((size * offset.x), (size * offset.y) + size)) < topLeftDistance) topLeft = index;
 
                 if (sideIndices.Contains(index)) edgeVertexCount++;
             }
@@ -242,14 +242,43 @@ public class Chunk : MonoBehaviour
             // Debug.Log(edgeVertexCount);
             if (edgeVertexCount != 3)
             {
+                foreach (int index in indices)
+                {
+                    Vector2 vert = new Vector2(vertices[index].x, vertices[index].z);
+                    float br = Vector2.Distance(vert, bottomRightCoord);
+                    float bl = Vector2.Distance(vert, bottomLeftCoord);
+                    float tr = Vector2.Distance(vert, topRightCoord);
+                    float tl = Vector2.Distance(vert, topLeftCoord);
+                    if (br < bottomRightDistance)
+                    {
+                        bottomRight = index;
+                        bottomRightDistance = br;
+                    }
+                    if (bl < bottomLeftDistance)
+                    {
+                        bottomLeft = index;
+                        bottomLeftDistance = bl;
+                    }
+                    if (tr < topRightDistance)
+                    {
+                        topRight = index;
+                        topRightDistance = tr;
+                    }
+                    if (tl < topLeftDistance)
+                    {
+                        topLeft = index;
+                        topLeftDistance = tl;
+                    }
+                }
                 triangles.AddRange(indices);
             }
         }
 
-        // vertices[bottomRight] = new Vector3((size * offset.x) + size, vertices[bottomRight].y, (size * offset.y));
-        // vertices[bottomLeft] = new Vector3((size * offset.x), vertices[bottomLeft].y, (size * offset.y));
-        // vertices[topRight] = new Vector3((size * offset.x) + size, vertices[topRight].y, (size * offset.y) + size);
-        // vertices[topLeft] = new Vector3((size * offset.x), vertices[topLeft].y, (size * offset.y) + size);
+        vertices[bottomRight] = new Vector3(bottomRightCoord.x, vertices[bottomRight].y, bottomRightCoord.y);
+        vertices[bottomLeft] = new Vector3(bottomLeftCoord.x, vertices[bottomLeft].y, bottomLeftCoord.y);
+        vertices[topRight] = new Vector3(topRightCoord.x, vertices[topRight].y, topRightCoord.y);
+        vertices[topLeft] = new Vector3(topLeftCoord.x, vertices[topLeft].y, topLeftCoord.y);
+
 
 
 
