@@ -47,6 +47,8 @@ public class Chunk : MonoBehaviour
     private float heightMax = 50;
     public float density = 5f;
     List<int> sideIndices;
+    public FastNoiseLite biomeWarp;
+    public FastNoiseLite heightNoise;
     class Point : IPoint
     {
         public double X { get; set; }
@@ -64,7 +66,9 @@ public class Chunk : MonoBehaviour
         float threshold,
         float density,
         Vector2 offset,
-        Material material
+        Material material,
+        FastNoiseLite heightNoise,
+        FastNoiseLite biomeWarp
     )
     {
         this.seed = seed;
@@ -73,6 +77,8 @@ public class Chunk : MonoBehaviour
         this.density = density;
         this.material = material;
         this.offset = offset;
+        this.heightNoise = heightNoise;
+        this.biomeWarp = biomeWarp;
         vertices = new List<Vector3>();
         triangles = new List<int>();
         gameObject.name = $"{offset.x},{offset.y}";
@@ -104,27 +110,7 @@ public class Chunk : MonoBehaviour
     }
     public void AddVertices()
     {
-        FastNoiseLite heightNoise = new FastNoiseLite();
-        heightNoise.SetNoiseType(FastNoiseLite.NoiseType.Cellular);
-        heightNoise.SetSeed(seed);
-        heightNoise.SetFrequency(density);
-        heightNoise.SetFractalType(FastNoiseLite.FractalType.PingPong);
-        heightNoise.SetFractalOctaves(5);
-        heightNoise.SetFractalGain(.5f);
-        heightNoise.SetFractalLacunarity(2.5f);
-        heightNoise.SetFractalPingPongStrength(3);
-        heightNoise.SetCellularDistanceFunction(FastNoiseLite.CellularDistanceFunction.EuclideanSq);
-        heightNoise.SetCellularReturnType(FastNoiseLite.CellularReturnType.CellValue);
-        heightNoise.SetCellularJitter(2.25f);
-
-
-        FastNoiseLite biomeWarp = new FastNoiseLite();
-        biomeWarp.SetDomainWarpType(FastNoiseLite.DomainWarpType.BasicGrid);
-        biomeWarp.SetDomainWarpAmp(20);
-        biomeWarp.SetFrequency(density);
-        biomeWarp.SetFractalType(FastNoiseLite.FractalType.DomainWarpProgressive);
-        biomeWarp.SetFractalLacunarity(0.50f);
-        biomeWarp.SetFractalGain(0.75f);
+        
 
         vertices = new List<Vector3>();
         sideIndices = new List<int>();
@@ -172,31 +158,6 @@ public class Chunk : MonoBehaviour
                 }
             }
         }
-
-
-        // startNeighbors = vertices.Count;
-
-        // if (NeighborVerticesEast != null) foreach (Vector3 vertex in NeighborVerticesEast)
-        //     {
-        //         if (!vertices.Contains(vertex)) vertices.Add(vertex);
-        //     }
-        // if (NeighborVerticesWest != null) foreach (Vector3 vertex in NeighborVerticesWest)
-        //     {
-        //         if (!vertices.Contains(vertex)) vertices.Add(vertex);
-        //     }
-        // if (NeighborVerticesNorth != null) foreach (Vector3 vertex in NeighborVerticesNorth)
-        //     {
-        //         if (!vertices.Contains(vertex)) vertices.Add(vertex);
-        //     }
-        // if (NeighborVerticesSouth != null) foreach (Vector3 vertex in NeighborVerticesSouth)
-        //     {
-        //         if (!vertices.Contains(vertex)) vertices.Add(vertex);
-        // }
-        // float borderOffset = size / 2;
-        // vertices.Add(new Vector3((size / 2) + (offset.x * size), 0, (size + borderOffset) + (offset.y * size))); // North vertex
-        // vertices.Add(new Vector3((-borderOffset) + (offset.x * size), 0, (size / 2) + (offset.y * size))); // West vertex
-        // vertices.Add(new Vector3((size + borderOffset) + (offset.x * size), 0, (size / 2) + (offset.y * size))); // East vertex
-        // vertices.Add(new Vector3((size / 2) + (offset.x * size), 0, (-borderOffset) + (offset.y * size))); // South vertex
     }
 
 
@@ -274,10 +235,10 @@ public class Chunk : MonoBehaviour
             }
         }
 
-        vertices[bottomRight] = new Vector3(bottomRightCoord.x, vertices[bottomRight].y, bottomRightCoord.y);
-        vertices[bottomLeft] = new Vector3(bottomLeftCoord.x, vertices[bottomLeft].y, bottomLeftCoord.y);
-        vertices[topRight] = new Vector3(topRightCoord.x, vertices[topRight].y, topRightCoord.y);
-        vertices[topLeft] = new Vector3(topLeftCoord.x, vertices[topLeft].y, topLeftCoord.y);
+        vertices[bottomRight] = new Vector3(bottomRightCoord.x, heightNoise.GetNoise(bottomRightCoord.x, bottomRightCoord.y) * biomeWarp.GetNoise(bottomRightCoord.x, bottomRightCoord.y) * heightMax, bottomRightCoord.y);
+        vertices[bottomLeft] = new Vector3(bottomLeftCoord.x, heightNoise.GetNoise(bottomLeftCoord.x, bottomLeftCoord.y) * biomeWarp.GetNoise(bottomLeftCoord.x, bottomLeftCoord.y) * heightMax, bottomLeftCoord.y);
+        vertices[topRight] = new Vector3(topRightCoord.x, heightNoise.GetNoise(topRightCoord.x, topRightCoord.y) * biomeWarp.GetNoise(topRightCoord.x, topRightCoord.y) * heightMax, topRightCoord.y);
+        vertices[topLeft] = new Vector3(topLeftCoord.x, heightNoise.GetNoise(topLeftCoord.x, topLeftCoord.y) * biomeWarp.GetNoise(topLeftCoord.x, topLeftCoord.y) * heightMax, topLeftCoord.y);
 
 
 

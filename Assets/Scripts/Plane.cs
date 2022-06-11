@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+using FastNoise;
 
 namespace Terrain
 {
@@ -16,14 +16,38 @@ namespace Terrain
         // private Chunk template;
         public int x = 0;
         public int z = 0;
+        private FastNoiseLite heightNoise;
+        private FastNoiseLite biomeWarp;
 
         void Start()
         {
+
+            heightNoise = new FastNoiseLite();
+            heightNoise.SetNoiseType(FastNoiseLite.NoiseType.Cellular);
+            heightNoise.SetSeed(seed);
+            heightNoise.SetFrequency(density);
+            heightNoise.SetFractalType(FastNoiseLite.FractalType.PingPong);
+            heightNoise.SetFractalOctaves(5);
+            heightNoise.SetFractalGain(.5f);
+            heightNoise.SetFractalLacunarity(2.5f);
+            heightNoise.SetFractalPingPongStrength(3);
+            heightNoise.SetCellularDistanceFunction(FastNoiseLite.CellularDistanceFunction.EuclideanSq);
+            heightNoise.SetCellularReturnType(FastNoiseLite.CellularReturnType.CellValue);
+            heightNoise.SetCellularJitter(2.25f);
+
+
+            biomeWarp = new FastNoiseLite();
+            biomeWarp.SetDomainWarpType(FastNoiseLite.DomainWarpType.BasicGrid);
+            biomeWarp.SetDomainWarpAmp(20);
+            biomeWarp.SetFrequency(density);
+            biomeWarp.SetFractalType(FastNoiseLite.FractalType.DomainWarpProgressive);
+            biomeWarp.SetFractalLacunarity(0.50f);
+            biomeWarp.SetFractalGain(0.75f);
             // template = gameObject.AddComponent<Chunk>();
             chunks = new List<Chunk>();
             // for (int x = 0; x < 3; x++) {
             // for (int z = 0; z < 3; z++) {
-                AddChunk();
+            AddChunk();
             // }
             // }
         }
@@ -43,7 +67,7 @@ namespace Terrain
             // if (east != null) chunks[chunks.Count - 1].NeighborVerticesEast = east.GetComponent<Chunk>().GetEastVertices();
             // if (west != null) chunks[chunks.Count - 1].NeighborVerticesWest = west.GetComponent<Chunk>().GetWestVertices();
 
-            chunks[chunks.Count - 1].Init(seed, chunkSize, .5f, density, new Vector2(x, z), material);
+            chunks[chunks.Count - 1].Init(seed, chunkSize, .5f, density, new Vector2(x, z), material, heightNoise, biomeWarp);
             chunks[chunks.Count - 1].AddVertices();
             chunks[chunks.Count - 1].Triangulate();
             chunks[chunks.Count - 1].Render();
@@ -53,11 +77,13 @@ namespace Terrain
         void Update()
         {
             z++;
-            if (z >= 3) {
+            if (z >= 3)
+            {
                 z = 0;
                 x++;
             }
-            if (x < 3) {
+            if (x < 3)
+            {
                 AddChunk();
             }
             // foreach(Chunk chunk in chunks)
