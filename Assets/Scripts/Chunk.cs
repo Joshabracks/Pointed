@@ -49,6 +49,8 @@ public class Chunk : MonoBehaviour
     List<int> sideIndices;
     public FastNoiseLite biomeWarp;
     public FastNoiseLite heightNoise;
+    public FastNoiseLite slopeNoise;
+    public FastNoiseLite sedimentNoise;
     class Point : IPoint
     {
         public double X { get; set; }
@@ -68,7 +70,9 @@ public class Chunk : MonoBehaviour
         Vector2 offset,
         Material material,
         FastNoiseLite heightNoise,
-        FastNoiseLite biomeWarp
+        FastNoiseLite biomeWarp,
+        FastNoiseLite slopeNoise,
+        FastNoiseLite sedimentNoise
     )
     {
         this.seed = seed;
@@ -79,6 +83,8 @@ public class Chunk : MonoBehaviour
         this.offset = offset;
         this.heightNoise = heightNoise;
         this.biomeWarp = biomeWarp;
+        this.slopeNoise = slopeNoise;
+        this.sedimentNoise = sedimentNoise;
         vertices = new List<Vector3>();
         triangles = new List<int>();
         gameObject.name = $"{offset.x},{offset.y}";
@@ -114,9 +120,9 @@ public class Chunk : MonoBehaviour
 
                     float xVal = offsetX + x + (offset.x * size);
                     float zVal = offsetZ + z + (offset.y * size);
-                    float height = heightNoise.GetNoise(xVal, zVal) * biomeWarp.GetNoise(xVal, zVal);
+                    float height = getHeight(xVal, zVal);
 
-                    Vector3 vertex = new Vector3(xVal, height * heightMax, zVal);
+                    Vector3 vertex = new Vector3(xVal, height, zVal);
                     if (x == 0 || z == 0 || x == size || z == size)
                     {
                         sideIndices.Add(vertices.Count);
@@ -125,6 +131,15 @@ public class Chunk : MonoBehaviour
                 }
             }
         }
+    }
+
+    private float getHeight(float x, float z) {
+        float warp = biomeWarp.GetNoise(x, z);
+        float slope = slopeNoise.GetNoise(x, z) + 1;
+        float sediment = sedimentNoise.GetNoise(warp * x, warp * z);
+        float height = heightNoise.GetNoise(warp * x, warp * z);
+        return height > sediment ? height * heightMax * slope : sediment * heightMax * slope;
+        // return height * heightMax * slope;
     }
 
 
@@ -197,14 +212,14 @@ public class Chunk : MonoBehaviour
             }
         }
 
-        vertices[bottomRight] = new Vector3(bottomRightCoord.x, heightNoise.GetNoise(bottomRightCoord.x, bottomRightCoord.y) * biomeWarp.GetNoise(bottomRightCoord.x, bottomRightCoord.y) * heightMax, bottomRightCoord.y);
-        vertices[bottomLeft] = new Vector3(bottomLeftCoord.x, heightNoise.GetNoise(bottomLeftCoord.x, bottomLeftCoord.y) * biomeWarp.GetNoise(bottomLeftCoord.x, bottomLeftCoord.y) * heightMax, bottomLeftCoord.y);
-        vertices[topRight] = new Vector3(topRightCoord.x, heightNoise.GetNoise(topRightCoord.x, topRightCoord.y) * biomeWarp.GetNoise(topRightCoord.x, topRightCoord.y) * heightMax, topRightCoord.y);
-        vertices[topLeft] = new Vector3(topLeftCoord.x, heightNoise.GetNoise(topLeftCoord.x, topLeftCoord.y) * biomeWarp.GetNoise(topLeftCoord.x, topLeftCoord.y) * heightMax, topLeftCoord.y);
+        vertices[bottomRight] = new Vector3(bottomRightCoord.x, getHeight(bottomRightCoord.x, bottomRightCoord.y), bottomRightCoord.y);
+        vertices[bottomLeft] = new Vector3(bottomLeftCoord.x, getHeight(bottomLeftCoord.x, bottomLeftCoord.y), bottomLeftCoord.y);
+        vertices[topRight] = new Vector3(topRightCoord.x, getHeight(topRightCoord.x, topRightCoord.y), topRightCoord.y);
+        vertices[topLeft] = new Vector3(topLeftCoord.x, getHeight(topLeftCoord.x, topLeftCoord.y), topLeftCoord.y);
 
     }
 
-    public void Render()
+    public void Render(Transform parent)
     {
         meshRenderer = gameObject.AddComponent<MeshRenderer>();
         meshFilter = gameObject.AddComponent<MeshFilter>();
@@ -217,6 +232,7 @@ public class Chunk : MonoBehaviour
         mesh.RecalculateBounds();
         meshFilter.mesh = mesh;
         gameObject.AddComponent<MeshCollider>();
+        gameObject.transform.SetParent(parent);
 
         running = false;
     }
