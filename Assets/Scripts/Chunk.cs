@@ -4,75 +4,81 @@ using UnityEngine;
 using FastNoise;
 using DelaunatorSharp;
 
-public class Chunk : MonoBehaviour
+namespace Terrain
 {
-    public int seed;
 
-    private int size;
-
-    public bool running = true;
-
-    private float threshold;
-
-    public Material material;
-
-    Mesh mesh;
-
-    MeshRenderer meshRenderer;
-
-    MeshFilter meshFilter;
-
-    public List<Vector3> vertices;
-
-    public List<int> NorthVertices = null;
-
-    public List<int> WestVertices = null;
-
-    public List<int> SouthVertices = null;
-
-    public List<int> EastVertices = null;
-
-    public Vector3[] NeighborVerticesNorth = null;
-
-    public Vector3[] NeighborVerticesSouth = null;
-
-    public Vector3[] NeighborVerticesEast = null;
-
-    public Vector3[] NeighborVerticesWest = null;
-    public List<int> triangles;
-    private int startNeighbors;
-    private Vector2 offset;
-    private int vertexNeighborCutoff;
-    public bool finalCheck = false;
-    private float heightMax = 50;
-    public float density = 5f;
-    List<int> sideIndices;
-    public FastNoiseLite biomeWarp;
-    public FastNoiseLite heightNoise;
-    public FastNoiseLite slopeNoise;
-    public FastNoiseLite sedimentNoise;
-    class Point : IPoint
+    public class Chunk : MonoBehaviour
     {
-        public double X { get; set; }
-        public double Y { get; set; }
-        public Point(Vector3 vertex)
-        {
-            X = (double)vertex.x;
-            Y = (double)vertex.z;
-        }
-    }
 
-    public void Init(
-        int seed,
-        int size,
-        float threshold,
-        float density,
-        Vector2 offset,
-        Material material,
-        FastNoiseLite heightNoise,
-        FastNoiseLite biomeWarp,
-        FastNoiseLite slopeNoise,
-        FastNoiseLite sedimentNoise
+        public int seed;
+
+        private int size;
+
+        public bool running = true;
+
+        private float threshold;
+
+        public Material material;
+
+        Mesh mesh;
+
+        MeshRenderer meshRenderer;
+
+        MeshFilter meshFilter;
+
+        public List<Vector3> vertices;
+
+        public List<int> NorthVertices = null;
+
+        public List<int> WestVertices = null;
+
+        public List<int> SouthVertices = null;
+
+        public List<int> EastVertices = null;
+
+        public Vector3[] NeighborVerticesNorth = null;
+
+        public Vector3[] NeighborVerticesSouth = null;
+
+        public Vector3[] NeighborVerticesEast = null;
+
+        public Vector3[] NeighborVerticesWest = null;
+        public List<int> triangles;
+        private int startNeighbors;
+        private Vector2 offset;
+        private int vertexNeighborCutoff;
+        public bool finalCheck = false;
+        private float heightMax = 50;
+        public float density = 5f;
+        List<int> sideIndices;
+        World world;
+        // public FastNoiseLite biomeWarp;
+        // public FastNoiseLite heightNoise;
+        // public FastNoiseLite slopeNoise;
+        // public FastNoiseLite sedimentNoise;
+        class Point : IPoint
+        {
+            public double X { get; set; }
+            public double Y { get; set; }
+            public Point(Vector3 vertex)
+            {
+                X = (double)vertex.x;
+                Y = (double)vertex.z;
+            }
+        }
+
+        public void Init(
+            int seed,
+            int size,
+            float threshold,
+            float density,
+            Vector2 offset,
+            Material material,
+            World world
+        // FastNoiseLite heightNoise,
+        // FastNoiseLite biomeWarp,
+        // FastNoiseLite slopeNoise,
+        // FastNoiseLite sedimentNoise
     )
     {
         this.seed = seed;
@@ -81,10 +87,11 @@ public class Chunk : MonoBehaviour
         this.density = density;
         this.material = material;
         this.offset = offset;
-        this.heightNoise = heightNoise;
-        this.biomeWarp = biomeWarp;
-        this.slopeNoise = slopeNoise;
-        this.sedimentNoise = sedimentNoise;
+        this.world = world;
+        // this.heightNoise = heightNoise;
+        // this.biomeWarp = biomeWarp;
+        // this.slopeNoise = slopeNoise;
+        // this.sedimentNoise = sedimentNoise;
         vertices = new List<Vector3>();
         triangles = new List<int>();
         gameObject.name = $"{offset.x},{offset.y}";
@@ -133,12 +140,14 @@ public class Chunk : MonoBehaviour
         }
     }
 
-    private float getHeight(float x, float z) {
-        float warp = biomeWarp.GetNoise(x, z);
-        float slope = slopeNoise.GetNoise(x, z) + 1;
-        float sediment = sedimentNoise.GetNoise(warp * x, warp * z);
-        float height = heightNoise.GetNoise(warp * x, warp * z);
-        return height > sediment ? height * heightMax * slope : sediment * heightMax * slope;
+    private float getHeight(float x, float z)
+    {
+        return world.GetHeight(x, z) * heightMax;
+        // float warp = biomeWarp.GetNoise(x, z);
+        // float slope = slopeNoise.GetNoise(x, z) + 1;
+        // float sediment = sedimentNoise.GetNoise(warp * x, warp * z);
+        // float height = heightNoise.GetNoise(warp * x, warp * z);
+        // return height > sediment ? height * heightMax * slope : sediment * heightMax * slope;
         // return height * heightMax * slope;
     }
 
@@ -236,4 +245,6 @@ public class Chunk : MonoBehaviour
 
         running = false;
     }
+}
+
 }

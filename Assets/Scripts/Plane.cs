@@ -34,7 +34,7 @@ namespace Terrain
         {
             GameObject obj = new GameObject();
             chunks.Add(obj.AddComponent<Chunk>());
-            chunks[chunks.Count - 1].Init(seed, chunkSize, .5f, density, new Vector2(x, z), material, heightNoise, biomeWarp, slopeNoise, sedimentNoise);
+            chunks[chunks.Count - 1].Init(seed, chunkSize, .5f, density, new Vector2(x, z), material, world);
             chunks[chunks.Count - 1].AddVertices();
             chunks[chunks.Count - 1].Triangulate();
             chunks[chunks.Count - 1].Render(gameObject.transform);

@@ -182,7 +182,8 @@ namespace Terrain
             float f = sedimentNoise.GetNoise(x + seed * .97f, z + seed * .97f);
             float g = slopeNoise.GetNoise(x + seed * .97f, z + seed * .97f);
             float h = biomeWarp.GetNoise(x + seed * .97f, z + seed * .97f);
-            return (e + f + g + h) / 4;
+            float result = (e + f + g + h) / 4;
+            return result;
         }
 
         public void GenerateLandMasses()
