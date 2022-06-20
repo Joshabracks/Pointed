@@ -15,6 +15,7 @@ namespace Terrain
         public int worldSize = 1920;
         public float density = 1;
         public int seed = 1337;
+        public int drawDistance = 2;
         private FastNoiseLite heightNoise;
         private FastNoiseLite biomeWarp;
         private FastNoiseLite slopeNoise;
@@ -44,14 +45,15 @@ namespace Terrain
             int _x = Mathf.FloorToInt((player.transform.position.x + (chunkSize / 2)) / chunkSize);
             int _z = Mathf.FloorToInt((player.transform.position.z + (chunkSize / 2)) / chunkSize);
             
-            for (int x = _x - 1; x < _x + 1; x++) {
-                for (int z = _z - 1; z < _z + 1; z++) {
+            for (int x = _x - drawDistance; x < _x + drawDistance; x++) {
+                for (int z = _z - drawDistance; z < _z + drawDistance; z++) {
                     string key = $"{x},{z}";
                     Transform child = gameObject.transform.Find(key);
                     if (child != null) {
-                        child.gameObject.SetActive(true);
+                        // child.gameObject.SetActive(true);
                     } else {
                         AddChunk(x, z);
+                        break;
                     }
                 }
             }

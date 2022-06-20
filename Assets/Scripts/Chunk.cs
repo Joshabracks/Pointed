@@ -28,27 +28,27 @@ namespace Terrain
 
         public List<Vector3> vertices;
 
-        public List<int> NorthVertices = null;
+        // public List<int> NorthVertices = null;
 
-        public List<int> WestVertices = null;
+        // public List<int> WestVertices = null;
 
-        public List<int> SouthVertices = null;
+        // public List<int> SouthVertices = null;
 
-        public List<int> EastVertices = null;
+        // public List<int> EastVertices = null;
 
-        public Vector3[] NeighborVerticesNorth = null;
+        // public Vector3[] NeighborVerticesNorth = null;
 
-        public Vector3[] NeighborVerticesSouth = null;
+        // public Vector3[] NeighborVerticesSouth = null;
 
-        public Vector3[] NeighborVerticesEast = null;
+        // public Vector3[] NeighborVerticesEast = null;
 
-        public Vector3[] NeighborVerticesWest = null;
+        // public Vector3[] NeighborVerticesWest = null;
         public List<int> triangles;
-        private int startNeighbors;
+        // private int startNeighbors;
         private Vector2 offset;
-        private int vertexNeighborCutoff;
-        public bool finalCheck = false;
-        private float heightMax = 50;
+        // private int vertexNeighborCutoff;
+        // public bool finalCheck = false;
+        private float heightMax = 200;
         public float density = 5f;
         List<int> sideIndices;
         World world;
@@ -96,6 +96,8 @@ namespace Terrain
         triangles = new List<int>();
         gameObject.name = $"{offset.x},{offset.y}";
     }
+
+
 
     public void AddVertices()
     {
@@ -245,6 +247,16 @@ namespace Terrain
 
         running = false;
     }
+
+    // void OnBecameVisible()
+    // {
+    //     enabled = true;
+    // }
+
+    // void OnBecameInvisible() {
+    //     Debug.Log("vanish");
+    //     enabled = false;
+    // }
 }
 
 }

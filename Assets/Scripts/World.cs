@@ -82,7 +82,7 @@ namespace Terrain
 
             biomeWarp = new FastNoiseLite();
             biomeWarp.SetDomainWarpType(FastNoiseLite.DomainWarpType.OpenSimplex2);
-            biomeWarp.SetDomainWarpAmp(20);
+            biomeWarp.SetDomainWarpAmp(200);
             biomeWarp.SetFrequency(density);
             biomeWarp.SetFractalType(FastNoiseLite.FractalType.DomainWarpProgressive);
             biomeWarp.SetFractalLacunarity(0);
@@ -95,15 +95,8 @@ namespace Terrain
         {
             float x = _x % size;
             float z = _z % size;
-
-            if (x < 0)
-            {
-                x = size + x;
-            }
-            if (x < 0)
-            {
-                z = size + z;
-            }
+            x = x >= 0 ? x : x + size;
+            z = z >= 0 ? z : z + size;
 
             List<float> heights = new List<float>();
             foreach (LandMass landMass in landMasses)
@@ -153,37 +146,47 @@ namespace Terrain
                     }
                 }
                 else continue;
-                float a = heightNoise.GetNoise(X + seed * landMass.RandomSeed, Z + seed * landMass.RandomSeed);
-                float b = sedimentNoise.GetNoise(X + seed * landMass.RandomSeed, Z + seed * landMass.RandomSeed);
-                float c = slopeNoise.GetNoise(X + seed * landMass.RandomSeed, Z + seed * landMass.RandomSeed);
-                float d = biomeWarp.GetNoise(X + seed * landMass.RandomSeed, Z + seed * landMass.RandomSeed);
-                float height = (a + b + c + d) / 4;
+                float warp = biomeWarp.GetNoise(X + seed * landMass.RandomSeed, Z + seed * landMass.RandomSeed);
+                float a = heightNoise.GetNoise(X + seed * landMass.RandomSeed, Z + seed * landMass.RandomSeed) * warp;
+                float b = sedimentNoise.GetNoise(X + seed * landMass.RandomSeed, Z + seed * landMass.RandomSeed) * warp;
+                float c = slopeNoise.GetNoise(X + seed * landMass.RandomSeed, Z + seed * landMass.RandomSeed) * warp;
+                float height = (a + b + c) / 3;
                 Vector2 position = new Vector2(X, Z);
-                float distance = Vector2.Distance(position, new Vector2());
-                float comparison = Vector2.Distance(position, new Vector2(landMass.Width, landMass.Height));
-                if (comparison < distance) distance = comparison;
-                comparison = Vector2.Distance(position, new Vector2(0, landMass.Height));
-                if (comparison < distance) distance = comparison;
-                comparison = Vector2.Distance(position, new Vector2(landMass.Width, 0));
-                if (comparison < distance) distance = comparison;
+                // Vector2 ll = new Vector2();
+                // Vector2 ul = new Vector2(0, landMass.Height);
+                // Vector2 ur = new Vector2(landMass.Width, landMass.Height);
+                // Vector2 lr = new Vector2(landMass.Width, 0);
+                // float distance = Vector2.Distance(((ll + ul + ur + lr) / 4), position);
 
-                distance = distance == 0 ? 0 : distance / ((landMass.Height + landMass.Width) / 2);
+                float lDist = X <= landMass.Width / 2 ? X : landMass.Width - X;
+                float hDist = Z <= landMass.Height / 2 ? Z : landMass.Height - Z;
+                float distance = lDist < hDist ? lDist : hDist;
+
+                // float comparison = Vector2.Distance(position, new Vector2(landMass.Width, landMass.Height));
+                // if (comparison < distance) distance = comparison;
+                // comparison = Vector2.Distance(position, new Vector2(0, landMass.Height));
+                // if (comparison < distance) distance = comparison;
+                // comparison = Vector2.Distance(position, new Vector2(landMass.Width, 0));
+                // if (comparison < distance) distance = comparison;
+
+                distance = distance == 0 ? 0 : (distance / ((landMass.Height + landMass.Width) / 2));
                 heights.Add(height * distance);
+                // heights.Add(distance);
             }
+            float seaWarp = biomeWarp.GetNoise(x + seed * .97f, z + seed * .97f);
+            float e = heightNoise.GetNoise(x + seed * .97f, z + seed * .97f) * seaWarp;
+            float f = sedimentNoise.GetNoise(x + seed * .97f, z + seed * .97f) * seaWarp;
+            float g = slopeNoise.GetNoise(x + seed * .97f, z + seed * .97f) * seaWarp;
+            float seaFloorHeight = (e + f + g) / 3;
             if (heights.Count > 0)
             {
                 float sum = 0;
                 foreach (float height in heights) sum += height;
                 sum /= heights.Count;
-                return sum;
+                return sum + seaFloorHeight;
             }
+            return seaFloorHeight;
 
-            float e = heightNoise.GetNoise(x + seed * .97f, z + seed * .97f);
-            float f = sedimentNoise.GetNoise(x + seed * .97f, z + seed * .97f);
-            float g = slopeNoise.GetNoise(x + seed * .97f, z + seed * .97f);
-            float h = biomeWarp.GetNoise(x + seed * .97f, z + seed * .97f);
-            float result = (e + f + g + h) / 4;
-            return result;
         }
 
         public void GenerateLandMasses()
@@ -207,8 +210,9 @@ namespace Terrain
                 landMass.Width = Mathf.CeilToInt(Mathf.Abs(size * massInhibitor * Mathf.PerlinNoise(x + seed * .79f, y + seed * .79f)));
                 landMass.Height = Mathf.CeilToInt(Mathf.Abs(size * massInhibitor * Mathf.PerlinNoise(x + seed * .379f, y + seed * .379f)));
 
-                landMass.X = Mathf.FloorToInt(Mathf.PerlinNoise(x + seed * .79f, y * seed * .79f)) * size;
-                landMass.Z = Mathf.FloorToInt(Mathf.PerlinNoise(x + seed * .691f, y * seed * .691f)) * size;
+                landMass.X = Mathf.FloorToInt(Mathf.PerlinNoise(x + seed * .79f, y * seed * .79f) * size);
+                landMass.Z = Mathf.FloorToInt(Mathf.PerlinNoise(x + seed * .691f, y * seed * .691f) * size);
+                Debug.Log($"{landMass.X},{landMass.Z}");
                 float v = landMass.Width * landMass.Height;
 
                 // List<LandMass> landMassPortions = new List<LandMass>();
