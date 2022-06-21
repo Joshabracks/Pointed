@@ -57,7 +57,7 @@ namespace Terrain
             heightNoise.SetNoiseType(FastNoiseLite.NoiseType.Cellular);
             heightNoise.SetSeed(seed);
             heightNoise.SetFrequency(density);
-            heightNoise.SetFractalType(FastNoiseLite.FractalType.FBm);
+            heightNoise.SetFractalType(FastNoiseLite.FractalType.DomainWarpProgressive);
             heightNoise.SetFractalOctaves(5);
             heightNoise.SetFractalGain(.5f);
             heightNoise.SetFractalLacunarity(2.5f);
@@ -169,23 +169,24 @@ namespace Terrain
                 // comparison = Vector2.Distance(position, new Vector2(landMass.Width, 0));
                 // if (comparison < distance) distance = comparison;
 
-                distance = distance == 0 ? 0 : (distance / ((landMass.Height + landMass.Width) / 2));
+                distance *= Mathf.PerlinNoise(X * landMass.RandomSeed * (.05f / size), Z * landMass.RandomSeed * (.05f / size));
+                distance = distance <= 0 ? 0 : (distance / ((landMass.Height + landMass.Width) / 2));
                 heights.Add(height * distance);
                 // heights.Add(distance);
             }
-            float seaWarp = biomeWarp.GetNoise(x + seed * .97f, z + seed * .97f);
-            float e = heightNoise.GetNoise(x + seed * .97f, z + seed * .97f) * seaWarp;
-            float f = sedimentNoise.GetNoise(x + seed * .97f, z + seed * .97f) * seaWarp;
-            float g = slopeNoise.GetNoise(x + seed * .97f, z + seed * .97f) * seaWarp;
-            float seaFloorHeight = (e + f + g) / 3;
+            // float seaWarp = biomeWarp.GetNoise(x + seed * .97f, z + seed * .97f);
+            // float e = heightNoise.GetNoise(x + seed * .97f, z + seed * .97f) * seaWarp;
+            // float f = sedimentNoise.GetNoise(x + seed * .97f, z + seed * .97f) * seaWarp;
+            // float g = slopeNoise.GetNoise(x + seed * .97f, z + seed * .97f) * seaWarp;
+            // float seaFloorHeight = (e + f + g) / 3;
             if (heights.Count > 0)
             {
                 float sum = 0;
                 foreach (float height in heights) sum += height;
-                sum /= heights.Count;
-                return sum + seaFloorHeight;
+                // sum /= heights.Count;
+                return sum;
             }
-            return seaFloorHeight;
+            return 0;
 
         }
 
@@ -212,7 +213,6 @@ namespace Terrain
 
                 landMass.X = Mathf.FloorToInt(Mathf.PerlinNoise(x + seed * .79f, y * seed * .79f) * size);
                 landMass.Z = Mathf.FloorToInt(Mathf.PerlinNoise(x + seed * .691f, y * seed * .691f) * size);
-                Debug.Log($"{landMass.X},{landMass.Z}");
                 float v = landMass.Width * landMass.Height;
 
                 // List<LandMass> landMassPortions = new List<LandMass>();

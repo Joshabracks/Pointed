@@ -48,7 +48,7 @@ namespace Terrain
         private Vector2 offset;
         // private int vertexNeighborCutoff;
         // public bool finalCheck = false;
-        private float heightMax = 200;
+        private float heightMax = 1000;
         public float density = 5f;
         List<int> sideIndices;
         World world;
@@ -104,9 +104,9 @@ namespace Terrain
         vertices = new List<Vector3>();
         sideIndices = new List<int>();
 
-        for (int x = 0; x < size + 1; x++)
+        for (int x = -1; x < size + 1; x++)
         {
-            for (int z = 0; z < size + 1; z++)
+            for (int z = -1; z < size + 1; z++)
             {
                 if (
                     Mathf
@@ -132,7 +132,7 @@ namespace Terrain
                     float height = getHeight(xVal, zVal);
 
                     Vector3 vertex = new Vector3(xVal, height, zVal);
-                    if (x == 0 || z == 0 || x == size || z == size)
+                    if (x == -1 || z == -1 || x == size || z == size)
                     {
                         sideIndices.Add(vertices.Count);
                     }

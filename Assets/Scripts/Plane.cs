@@ -21,6 +21,7 @@ namespace Terrain
         private FastNoiseLite slopeNoise;
         private FastNoiseLite sedimentNoise;
         private World world;
+        private bool running = false;
 
         void Start()
         {
@@ -29,6 +30,21 @@ namespace Terrain
             world = new World(seed, worldSize, density, .75f);
 
             chunks = new List<Chunk>();
+
+            int _x = Mathf.FloorToInt((player.transform.position.x + (chunkSize / 2)) / chunkSize);
+            int _z = Mathf.FloorToInt((player.transform.position.z + (chunkSize / 2)) / chunkSize);
+            
+            for (int x = _x - drawDistance; x < _x + drawDistance; x++) {
+                for (int z = _z - drawDistance; z < _z + drawDistance; z++) {
+                    string key = $"{x},{z}";
+                    Transform child = gameObject.transform.Find(key);
+                    if (child != null) {
+                        // child.gameObject.SetActive(true);
+                    } else {
+                        AddChunk(x, z);
+                    }
+                }
+            }
         }
 
         private void AddChunk(int x, int z)
@@ -41,7 +57,7 @@ namespace Terrain
             chunks[chunks.Count - 1].Render(gameObject.transform);
         }
 
-        private void checkChunks() {
+        private IEnumerator checkChunks() {
             int _x = Mathf.FloorToInt((player.transform.position.x + (chunkSize / 2)) / chunkSize);
             int _z = Mathf.FloorToInt((player.transform.position.z + (chunkSize / 2)) / chunkSize);
             
@@ -53,17 +69,23 @@ namespace Terrain
                         // child.gameObject.SetActive(true);
                     } else {
                         AddChunk(x, z);
-                        break;
+                        yield return new WaitForEndOfFrame();
                     }
                 }
             }
+            running = false;
         }
 
 
         // Update is called once per frame
         void Update()
         {
-            checkChunks();
+            if (!running)
+            {
+                running = true;
+                StartCoroutine(checkChunks());
+            }
+            // checkChunks();
             // z++;
             // if (z >= 5)
             // {
