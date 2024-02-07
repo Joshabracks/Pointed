@@ -41,6 +41,7 @@
      <Compile Include="Assets\Scripts\Chunk.cs" />
      <Compile Include="Assets\TutorialInfo\Scripts\Readme.cs" />
      <Compile Include="Assets\Scripts\FastNoiseLite.cs" />
+     <Compile Include="Assets\Scripts\SC_FPSController.cs" />
     <Reference Include="UnityEngine">
         <HintPath>C:\Program Files\Unity\Hub\Editor\2021.3.2f1\Editor\Data\Managed\UnityEngine\UnityEngine.dll</HintPath>
     </Reference>
